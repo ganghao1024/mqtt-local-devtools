@@ -1,0 +1,10 @@
+{
+  "name": "mqtt-local-devtools",
+  "version": "0.7.1",
+  "private": true,
+  "description": "Chromium DevTools extension for inspecting MQTT over WebSocket traffic",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "check": "node --check background-runtime.js && node --check background.js && node --check ring-buffer.js && node --check content-bridge.js && node --check event-batcher.js && node --check mqtt-decoder.js && node --check page-hook.js && node --check panel-runtime.js && node --check panel.js && node --check popup.js && node --test tests/*.test.js"
+  }
+}

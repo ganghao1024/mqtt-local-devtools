@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>MQTT Panel Interaction Harness</title>
+    <link rel="stylesheet" href="../panel.css?v=0.7.1" />
+  </head>
+  <body>
+    <output id="packetNodeCreations" hidden>0</output>
+    <header class="app-header">
+      <div class="brand"><span class="brand-mark">↻</span><span class="brand-name">MQTT</span></div>
+      <div class="header-actions">
+        <span id="headerStats" class="header-stats">0 条报文 · 0 msg/s</span>
+        <button id="pauseButton" class="action-button" type="button"><span class="button-label">暂停</span></button>
+        <button id="clearButton" class="action-button" type="button"><span>清空</span></button>
+        <button id="exportButton" class="action-button primary" type="button"><span>导出 JSON</span></button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside id="connectionsPane" class="connections-pane">
+        <label class="search-field sidebar-search" for="topicSearchInput"><input id="topicSearchInput" type="search" placeholder="筛选 Topic" /></label>
+        <section class="sidebar-section connection-section">
+          <div class="section-heading"><span>连接</span><button id="allConnectionsButton" class="text-button" type="button"><span id="connectionCount">0</span></button></div>
+          <select id="connectionFilter" class="visually-hidden" aria-label="连接筛选"><option value="all">全部连接</option></select>
+          <div id="connectionsList" class="connections-list"></div>
+        </section>
+        <section class="sidebar-section topic-section">
+          <div class="section-heading"><span>Topic 分组</span><button id="clearTopicFilterButton" class="text-button selected" type="button">全部</button></div>
+          <div id="topicGroupsList" class="topic-groups"></div>
+          <div id="topicEmptyState" class="sidebar-empty">收到报文后显示 Topic</div>
+        </section>
+      </aside>
+
+      <div id="leftPaneResizer" class="pane-resizer left-resizer" role="separator" tabindex="0" aria-label="调整 Topic 与报文列表宽度" aria-orientation="vertical" aria-controls="connectionsPane packetsPane"></div>
+
+      <section id="packetsPane" class="packets-pane">
+        <div class="filters-bar">
+          <select id="directionFilter" aria-label="方向筛选"><option value="all">全部方向</option><option value="incoming">接收</option><option value="outgoing">发送</option></select>
+          <select id="typeFilter" aria-label="报文类型筛选"><option value="all">全部类型</option><option value="PUBLISH">PUBLISH(发布消息)</option><option value="SUBSCRIBE">SUBSCRIBE(订阅主题)</option></select>
+          <select id="timeOrderFilter" aria-label="时间排序"><option value="desc">最新在前</option><option value="asc">最早在前</option></select>
+          <label class="search-field global-search" for="searchInput"><input id="searchInput" type="search" placeholder="搜索 Topic / Payload / Client ID" /></label>
+          <span id="activeTopicFilter" class="active-filter hidden"></span>
+          <span id="resultCount" class="result-count">0 条结果</span>
+        </div>
+        <div class="table-wrap">
+          <table><thead><tr><th>时间</th><th>方向</th><th>类型</th><th>Topic / 信息</th><th>QoS</th><th>Payload 预览</th></tr></thead><tbody id="packetRows"></tbody></table>
+          <div id="emptyState" class="empty-state"><strong>等待 MQTT 报文</strong><span>测试数据准备中</span></div>
+        </div>
+      </section>
+
+      <div id="rightPaneResizer" class="pane-resizer right-resizer" role="separator" tabindex="0" aria-label="调整报文列表与报文详情宽度" aria-orientation="vertical" aria-controls="packetsPane detailsPane"></div>
+
+      <aside id="detailsPane" class="details-pane">
+        <div class="details-header"><span>报文详情</span><button id="copyButton" class="action-button compact" type="button" disabled><span>复制</span></button></div>
+        <div class="details-search-row"><label class="search-field details-search" for="detailsSearchInput"><input id="detailsSearchInput" type="search" placeholder="搜索 Payload 关键字" disabled /></label><span id="detailsSearchCount" class="details-search-count"></span></div>
+        <div id="detailsScroll" class="details-scroll" tabindex="0">
+          <div id="detailsEmpty" class="details-empty">点击一条报文查看完整内容</div>
+          <section id="metadataCard" class="detail-card hidden">
+            <h2>报文元信息</h2>
+            <dl class="metadata-list">
+              <div><dt>时间</dt><dd id="detailTime">—</dd></div>
+              <div><dt>方向</dt><dd id="detailDirection">—</dd></div>
+              <div><dt>类型</dt><dd id="detailType">—</dd></div>
+              <div><dt>Topic</dt><dd id="detailTopic" class="topic-value">—</dd></div>
+              <div><dt>QoS</dt><dd id="detailQos">—</dd></div>
+              <div><dt>Client ID</dt><dd id="detailClientId">—</dd></div>
+              <div><dt>连接</dt><dd id="detailConnection">—</dd></div>
+            </dl>
+          </section>
+          <section id="payloadCard" class="detail-card payload-card hidden"><div class="card-heading"><h2>Payload</h2><span id="payloadMeta">—</span></div><pre id="detailsContent"></pre></section>
+          <details id="rawDetailsCard" class="detail-card raw-card hidden"><summary>完整报文诊断</summary><pre id="rawDetailsContent"></pre></details>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="statusbar app-statusbar">
+      <span class="listen-status"><span id="statusIndicator" class="status-dot"></span><span id="statusText">测试中</span></span>
+      <span class="status-meta"><span id="packetCount">0 条报文</span><span class="shortcuts">Esc 清筛选 · Space 暂停 · / 搜索</span><span>v0.7.1</span></span>
+    </footer>
+
+    <script>
+      (() => {
+        const nativeCreateElement = document.createElement.bind(document);
+        let packetNodeCreations = 0;
+        document.createElement = function instrumentPacketNodes(tagName, options) {
+          const element = nativeCreateElement(tagName, options);
+          if (tagName === "tr" || tagName === "td") {
+            packetNodeCreations += 1;
+            document.querySelector("#packetNodeCreations").textContent = String(packetNodeCreations);
+          }
+          return element;
+        };
+
+        const listeners = [];
+        let sequence = 0;
+        let timer = null;
+        const sourceTab = { id: 1, title: "MQTT 调试示例页", url: "https://dashboard.example.test/#/situation-center" };
+        function createPacketEvent() {
+          sequence += 1;
+          const subscribe = sequence % 9 === 0;
+          const topic = sequence % 4 === 0
+            ? "demo/data/nest/5200/status"
+            : "demo/data/device/" + (5200 + sequence % 3) + "/status";
+          return {
+            id: "packet-" + sequence,
+            kind: "packet",
+            timestamp: Date.now(),
+            connectionId: sequence % 2 ? "a" : "b",
+            direction: sequence % 3 ? "incoming" : "outgoing",
+            sourceTab,
+            packet: subscribe
+              ? { type: 8, typeName: "SUBSCRIBE", topics: [{ topic: "demo/cmd/+", qos: 1 }], rawHex: "82 00" }
+              : { type: 3, typeName: "PUBLISH", topic, qos: 0, payloadEncoding: "utf-8", payloadSize: 64, payloadText: JSON.stringify({ sequence, createTime: Date.now(), status: "online" }), rawHex: "30 00" }
+          };
+        }
+        const initialEvents = [
+          { id: "ready", kind: "hook-ready", sessionId: "harness-session", timestamp: Date.now(), sourceTab },
+          { id: "connection-a", kind: "connection", timestamp: Date.now(), sourceTab, connection: { id: "a", mqtt: true, clientId: "dashboard-mqtt-client", url: "wss://mqtt.example.test/realtime/mqtt", status: "open" } },
+          { id: "connection-b", kind: "connection", timestamp: Date.now(), sourceTab, connection: { id: "b", mqtt: true, clientId: "flight-mqtt-client", url: "wss://backup-mqtt.example.test/mqtt", status: "open" } }
+        ];
+        const largePayload = JSON.stringify({
+          createTime: new Date().toISOString(),
+          deviceId: "uav-5200",
+          status: "online",
+          items: Array.from({ length: 180 }, (_, index) => ({
+            index,
+            alarmStatus: index % 3 ? "NORMAL" : "充电中",
+            altitude: 120 + index,
+            longitude: 113.902 + index / 10000
+          }))
+        });
+        initialEvents.push({
+          id: "large-details",
+          kind: "packet",
+          timestamp: Date.now() + 1,
+          connectionId: "a",
+          direction: "incoming",
+          sourceTab,
+          packet: {
+            type: 3,
+            typeName: "PUBLISH",
+            topic: "demo/data/device/5200/status",
+            qos: 0,
+            payloadEncoding: "utf-8",
+            payloadSize: largePayload.length,
+            payloadText: largePayload,
+            rawHex: "30 00"
+          }
+        });
+
+        window.__MQTT_MONITOR_TEST_API__ = {
+          devtools: { inspectedWindow: { tabId: 1 } },
+          runtime: {
+            connect() {
+              return {
+                postMessage() {},
+                onMessage: { addListener(listener) { listeners.push(listener); } }
+              };
+            },
+            sendMessage(_message, callback) { callback({ events: initialEvents }); }
+          }
+        };
+        window.mqttHarness = {
+          start(intervalMs = 20) {
+            if (timer !== null) return;
+            timer = setInterval(() => {
+              listeners.forEach((listener) => listener({ type: "MQTT_MONITOR_EVENTS", events: [createPacketEvent()] }));
+            }, intervalMs);
+          },
+          pushMany(count, batchSize = 100) {
+            for (let offset = 0; offset < count; offset += batchSize) {
+              const size = Math.min(batchSize, count - offset);
+              const events = Array.from({ length: size }, createPacketEvent);
+              listeners.forEach((listener) => listener({ type: "MQTT_MONITOR_EVENTS", events }));
+            }
+          },
+          stop() {
+            if (timer !== null) clearInterval(timer);
+            timer = null;
+          }
+        };
+      })();
+    </script>
+    <script src="../ring-buffer.js?v=0.7.1"></script>
+    <script src="../panel-runtime.js?v=0.7.1"></script>
+    <script src="../panel.js?v=0.7.1"></script>
+    <script>
+      const harnessInterval = Number(new URLSearchParams(location.search).get("interval"));
+      window.mqttHarness.start(Number.isFinite(harnessInterval) && harnessInterval > 0 ? harnessInterval : 20);
+    </script>
+  </body>
+</html>

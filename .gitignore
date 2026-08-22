@@ -1,0 +1,8 @@
+# Generated release packages and local browser artifacts
+release/
+.playwright-cli/
+
+# Local logs and OS metadata
+*.log
+Thumbs.db
+.DS_Store

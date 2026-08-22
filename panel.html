@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MQTT Local DevTools</title>
+    <link rel="stylesheet" href="panel.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand" aria-label="MQTT Monitor">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M7 12a5 5 0 0 1 8.8-3.2M17 12a5 5 0 0 1-8.8 3.2" />
+            <path d="m14.4 6.8 1.8 2.1-2.7.7M9.6 17.2l-1.8-2.1 2.7-.7" />
+          </svg>
+        </span>
+        <span class="brand-name">MQTT</span>
+      </div>
+
+      <div class="header-actions">
+        <span id="headerStats" class="header-stats" aria-live="polite">0 条报文 · 0 msg/s</span>
+        <button id="pauseButton" class="action-button" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14" /></svg>
+          <span class="button-label">暂停</span>
+        </button>
+        <button id="clearButton" class="action-button" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+          <span>清空</span>
+        </button>
+        <button id="exportButton" class="action-button primary" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14" /></svg>
+          <span>导出 JSON</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside id="connectionsPane" class="connections-pane">
+        <label class="search-field sidebar-search" for="topicSearchInput">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m16 16 4 4" /></svg>
+          <input id="topicSearchInput" type="search" placeholder="筛选 Topic" autocomplete="off" />
+        </label>
+
+        <section class="sidebar-section connection-section">
+          <div class="section-heading">
+            <span>连接</span>
+            <button id="allConnectionsButton" class="text-button" type="button" aria-label="显示全部连接">
+              <span id="connectionCount">0</span>
+            </button>
+          </div>
+          <select id="connectionFilter" class="visually-hidden" aria-label="连接筛选" tabindex="-1">
+            <option value="all">全部连接</option>
+          </select>
+          <div id="connectionsList" class="connections-list"></div>
+        </section>
+
+        <section class="sidebar-section topic-section">
+          <div class="section-heading">
+            <span>Topic 分组</span>
+            <button id="clearTopicFilterButton" class="text-button selected" type="button">全部</button>
+          </div>
+          <div id="topicGroupsList" class="topic-groups" aria-label="Topic 分组筛选"></div>
+          <div id="topicEmptyState" class="sidebar-empty">收到 PUBLISH 或订阅报文后显示 Topic</div>
+        </section>
+      </aside>
+
+      <div
+        id="leftPaneResizer"
+        class="pane-resizer left-resizer"
+        role="separator"
+        tabindex="0"
+        aria-label="调整 Topic 与报文列表宽度"
+        aria-orientation="vertical"
+        aria-controls="connectionsPane packetsPane"
+        title="拖动调整宽度，方向键微调，双击恢复默认"
+      ></div>
+
+      <section id="packetsPane" class="packets-pane">
+        <div class="filters-bar">
+          <select id="directionFilter" aria-label="方向筛选">
+            <option value="all">全部方向</option>
+            <option value="incoming">接收</option>
+            <option value="outgoing">发送</option>
+          </select>
+          <select id="typeFilter" aria-label="报文类型筛选">
+            <option value="all">全部类型</option>
+            <option value="CONNECT">CONNECT(连接)</option>
+            <option value="CONNACK">CONNACK(连接确认)</option>
+            <option value="PUBLISH">PUBLISH(发布消息)</option>
+            <option value="PUBACK">PUBACK(发布确认)</option>
+            <option value="PUBREC">PUBREC(发布已接收)</option>
+            <option value="PUBREL">PUBREL(发布释放)</option>
+            <option value="PUBCOMP">PUBCOMP(发布完成)</option>
+            <option value="SUBSCRIBE">SUBSCRIBE(订阅主题)</option>
+            <option value="SUBACK">SUBACK(订阅确认)</option>
+            <option value="UNSUBSCRIBE">UNSUBSCRIBE(取消订阅)</option>
+            <option value="UNSUBACK">UNSUBACK(取消订阅确认)</option>
+            <option value="PINGREQ">PINGREQ(心跳请求)</option>
+            <option value="PINGRESP">PINGRESP(心跳响应)</option>
+            <option value="DISCONNECT">DISCONNECT(断开连接)</option>
+            <option value="AUTH">AUTH(认证)</option>
+          </select>
+          <select id="timeOrderFilter" aria-label="时间排序">
+            <option value="desc">最新在前</option>
+            <option value="asc">最早在前</option>
+          </select>
+          <label class="search-field global-search" for="searchInput">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m16 16 4 4" /></svg>
+            <input id="searchInput" type="search" placeholder="搜索 Topic / Payload / Client ID" autocomplete="off" />
+          </label>
+          <span id="activeTopicFilter" class="active-filter hidden"></span>
+          <span id="resultCount" class="result-count">0 条结果</span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>时间</th>
+                <th>方向</th>
+                <th>类型</th>
+                <th>Topic / 信息</th>
+                <th>QoS</th>
+                <th>Payload 预览</th>
+              </tr>
+            </thead>
+            <tbody id="packetRows"></tbody>
+          </table>
+          <div id="emptyState" class="empty-state">
+            <span class="empty-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M5 7h14v10H5zM8 4v3m8-3v3M8 17v3m8-3v3" /></svg>
+            </span>
+            <strong>等待 MQTT 报文</strong>
+            <span>刷新实际创建 MQTT 的页面，让插件从连接建立前开始监听。</span>
+          </div>
+        </div>
+      </section>
+
+      <div
+        id="rightPaneResizer"
+        class="pane-resizer right-resizer"
+        role="separator"
+        tabindex="0"
+        aria-label="调整报文列表与报文详情宽度"
+        aria-orientation="vertical"
+        aria-controls="packetsPane detailsPane"
+        title="拖动调整宽度，方向键微调，双击恢复默认"
+      ></div>
+
+      <aside id="detailsPane" class="details-pane">
+        <div class="details-header">
+          <span>报文详情</span>
+          <button id="copyButton" class="action-button compact" type="button" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></svg>
+            <span>复制</span>
+          </button>
+        </div>
+        <div class="details-search-row">
+          <label class="search-field details-search" for="detailsSearchInput">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m16 16 4 4" /></svg>
+            <input id="detailsSearchInput" type="search" placeholder="搜索 Payload 关键字" title="Enter 下一个，Shift+Enter 上一个" disabled />
+          </label>
+          <span id="detailsSearchCount" class="details-search-count" aria-live="polite"></span>
+        </div>
+        <div id="detailsScroll" class="details-scroll" tabindex="0" aria-label="报文详情，可滚动">
+          <div id="detailsEmpty" class="details-empty">点击一条报文查看完整内容</div>
+
+          <section id="metadataCard" class="detail-card hidden">
+            <h2>报文元信息</h2>
+            <dl class="metadata-list">
+              <div><dt>时间</dt><dd id="detailTime">—</dd></div>
+              <div><dt>方向</dt><dd id="detailDirection">—</dd></div>
+              <div><dt>类型</dt><dd id="detailType">—</dd></div>
+              <div><dt>Topic</dt><dd id="detailTopic" class="topic-value">—</dd></div>
+              <div><dt>QoS</dt><dd id="detailQos">—</dd></div>
+              <div><dt>Client ID</dt><dd id="detailClientId">—</dd></div>
+              <div><dt>连接</dt><dd id="detailConnection">—</dd></div>
+            </dl>
+          </section>
+
+          <section id="payloadCard" class="detail-card payload-card hidden">
+            <div class="card-heading">
+              <h2>Payload</h2>
+              <span id="payloadMeta">—</span>
+            </div>
+            <pre id="detailsContent"></pre>
+          </section>
+
+          <details id="rawDetailsCard" class="detail-card raw-card hidden">
+            <summary>完整报文诊断</summary>
+            <pre id="rawDetailsContent"></pre>
+          </details>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="statusbar app-statusbar">
+      <span class="listen-status"><span id="statusIndicator" class="status-dot"></span><span id="statusText">正在连接页面…</span></span>
+      <span class="status-meta"><span id="packetCount">0 条报文</span><span class="shortcuts">Esc 清筛选 · Space 暂停 · / 搜索</span><span>v0.7.1</span></span>
+    </footer>
+
+    <script src="ring-buffer.js"></script>
+    <script src="panel-runtime.js"></script>
+    <script src="panel.js"></script>
+  </body>
+</html>

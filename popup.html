@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MQTT Local DevTools</title>
+    <style>
+      body { width: 300px; margin: 0; padding: 16px; background: #171a21; color: #e6e9ef; font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      h1 { margin: 0 0 8px; font-size: 16px; }
+      p { margin: 7px 0; color: #aeb5c0; }
+      code { color: #64d7aa; word-break: break-all; }
+      .status { margin: 12px 0; padding: 9px 10px; border: 1px solid #343a46; border-radius: 6px; background: #1e222b; }
+      .hint { font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>MQTT Local DevTools</h1>
+    <p>监控页面自身建立的 MQTT WebSocket，不会额外连接 Broker。</p>
+    <div id="site" class="status">正在读取当前页面…</div>
+    <p class="hint">所有 HTTP/HTTPS 页面均已启用。刷新页面后打开开发者工具，选择 <strong>MQTT</strong> 面板。</p>
+    <script src="popup.js"></script>
+  </body>
+</html>
