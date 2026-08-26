@@ -15,6 +15,7 @@ const {
   groupPacketTopicTree,
   groupPacketTopics,
   observeSourceSession,
+  packetEmptyState,
   packetMessageRate,
   pruneSourceTabData,
   reconcileKeyedChildren,
@@ -22,6 +23,18 @@ const {
   virtualWindow,
   visiblePacketsByTimeOrder
 } = require("../panel-runtime.js");
+
+test("packet empty state distinguishes no captured packets from no filter matches", () => {
+  assert.deepEqual(packetEmptyState(0, 0), {
+    title: "等待 MQTT 报文",
+    description: "刷新实际创建 MQTT 的页面，让插件从连接建立前开始监听。"
+  });
+  assert.deepEqual(packetEmptyState(5000, 0), {
+    title: "没有匹配的报文",
+    description: "调整或清除筛选条件后重试。"
+  });
+  assert.equal(packetEmptyState(5000, 1), null);
+});
 
 class FakeOption {
   constructor(text, value) {

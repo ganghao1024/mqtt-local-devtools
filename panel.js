@@ -124,6 +124,8 @@ const elements = {
   tableWrap: document.querySelector(".table-wrap"),
   packetRows: document.querySelector("#packetRows"),
   emptyState: document.querySelector("#emptyState"),
+  emptyStateTitle: document.querySelector("#emptyStateTitle"),
+  emptyStateDescription: document.querySelector("#emptyStateDescription"),
   statusIndicator: document.querySelector("#statusIndicator"),
   statusText: document.querySelector("#statusText"),
   packetCount: document.querySelector("#packetCount"),
@@ -783,7 +785,12 @@ function renderPackets(packets) {
   state.filteredPacketView = state.timeOrder === "asc" ? packets : packets.slice().reverse();
   renderPacketWindow();
 
-  elements.emptyState.classList.toggle("hidden", packets.length > 0);
+  const emptyState = panelRuntime.packetEmptyState(state.cachedPacketCount, packets.length);
+  elements.emptyState.classList.toggle("hidden", emptyState === null);
+  if (emptyState) {
+    elements.emptyStateTitle.textContent = emptyState.title;
+    elements.emptyStateDescription.textContent = emptyState.description;
+  }
   elements.resultCount.textContent = packets.length + " 条结果";
   elements.packetCount.textContent = packets.length + " 条报文（虚拟滚动）";
 }

@@ -183,6 +183,20 @@
     return Math.round((packetCount * 1000) / safeWindow);
   }
 
+  function packetEmptyState(cachedPacketCount, filteredPacketCount) {
+    if (Number(filteredPacketCount) > 0) return null;
+    if (Number(cachedPacketCount) > 0) {
+      return {
+        title: "没有匹配的报文",
+        description: "调整或清除筛选条件后重试。"
+      };
+    }
+    return {
+      title: "等待 MQTT 报文",
+      description: "刷新实际创建 MQTT 的页面，让插件从连接建立前开始监听。"
+    };
+  }
+
   function packetTopics(event) {
     if (typeof event?.packet?.topic === "string" && event.packet.topic) {
       return [event.packet.topic];
@@ -420,6 +434,7 @@
     groupPacketTopicTree,
     groupPacketTopics,
     observeSourceSession,
+    packetEmptyState,
     packetMessageRate,
     packetTopics,
     pruneSourceTabData,
