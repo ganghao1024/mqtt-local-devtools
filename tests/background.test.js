@@ -28,6 +28,7 @@ function createBackgroundHarness() {
     4300: [{ id: "ready-4300", kind: "hook-ready", timestamp: 1 }],
     5050: [{ id: "packet-5050", kind: "packet", timestamp: 2, connectionId: "mqtt-1", packet: { typeName: "PUBLISH" } }]
   };
+  const tabMessages = [];
   let badgeRejectionHandlers = 0;
   const rejectedBadgeOperation = {
     catch(handler) {
@@ -53,7 +54,12 @@ function createBackgroundHarness() {
       tabs: {
         get(tabId, callback) { callback(tabs[tabId]); },
         query(_query, callback) { callback(Object.values(tabs)); },
-        sendMessage(tabId, _message, callback) { callback({ events: snapshots[tabId] || [] }); },
+        sendMessage(tabId, message, callback) {
+          tabMessages.push({ tabId, message });
+          callback?.(message.type === "MQTT_MONITOR_GET_SNAPSHOT"
+            ? { events: snapshots[tabId] || [] }
+            : {});
+        },
         onUpdated: tabsUpdated,
         onRemoved: tabsRemoved
       }
@@ -69,9 +75,49 @@ function createBackgroundHarness() {
     runtimeConnect,
     runtimeMessage,
     tabs,
+    tabMessages,
     badgeRejectionHandlers: () => badgeRejectionHandlers
   };
 }
+
+test("panel switches related page replay buffers only after its initial snapshot is ready", () => {
+  const harness = createBackgroundHarness();
+  const portMessages = listenerSlot();
+  const portDisconnect = listenerSlot();
+  const port = {
+    name: "mqtt-monitor-panel",
+    onMessage: portMessages,
+    onDisconnect: portDisconnect,
+    postMessage() {}
+  };
+
+  harness.runtimeConnect.listener(port);
+  portMessages.listener({ type: "PANEL_INIT", tabId: 4300 });
+  assert.equal(
+    harness.tabMessages.filter(({ message }) => message.type === "MQTT_MONITOR_SET_REPLAY_MODE").length,
+    0
+  );
+
+  portMessages.listener({ type: "PANEL_READY", tabId: 4300 });
+
+  const connectedModes = harness.tabMessages.filter(
+    ({ message }) => message.type === "MQTT_MONITOR_SET_REPLAY_MODE"
+  );
+  assert.deepEqual(
+    connectedModes.map(({ tabId, message }) => [tabId, message.panelConnected]).sort(),
+    [[4300, true], [5050, true]]
+  );
+
+  harness.tabMessages.length = 0;
+  portDisconnect.listener();
+  const disconnectedModes = harness.tabMessages.filter(
+    ({ message }) => message.type === "MQTT_MONITOR_SET_REPLAY_MODE"
+  );
+  assert.deepEqual(
+    disconnectedModes.map(({ tabId, message }) => [tabId, message.panelConnected]).sort(),
+    [[4300, false], [5050, false]]
+  );
+});
 
 test("live events from port 5050 reach a DevTools panel inspecting port 4300", () => {
   const harness = createBackgroundHarness();

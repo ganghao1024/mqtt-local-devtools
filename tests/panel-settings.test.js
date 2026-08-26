@@ -84,6 +84,15 @@ test("packet status distinguishes retained cache from cumulative receives", () =
   assert.match(script, /MAX_STORED_BYTES = 32 \* 1024 \* 1024/);
 });
 
+test("panel marks the live replay mode ready only after requesting its initial snapshot", () => {
+  const script = fs.readFileSync(path.join(root, "panel.js"), "utf8");
+  const snapshotRequest = script.indexOf('type: "MQTT_MONITOR_GET_SNAPSHOT"');
+  const panelReady = script.indexOf('type: "PANEL_READY"');
+
+  assert.ok(snapshotRequest >= 0);
+  assert.ok(panelReady > snapshotRequest);
+});
+
 test("high-volume rendering is throttled, searchable and virtualized", () => {
   const script = fs.readFileSync(path.join(root, "panel.js"), "utf8");
   const css = fs.readFileSync(path.join(root, "panel.css"), "utf8");

@@ -301,17 +301,22 @@ body.resizing-panes * {
 .connection-section {
   flex: 0 1 auto;
   max-height: 46%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .topic-section {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   padding-bottom: 10px;
 }
 
 .section-heading {
   height: 38px;
+  flex: 0 0 38px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -335,8 +340,11 @@ body.resizing-panes * {
 }
 
 .connections-list {
-  max-height: calc(46vh - 78px);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .connection-card {
@@ -420,9 +428,11 @@ body.resizing-panes * {
 }
 
 .topic-groups {
-  flex: 0 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .topic-group-item + .topic-group-item {

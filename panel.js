@@ -1097,6 +1097,7 @@ extensionApi.runtime.sendMessage(
     void extensionApi.runtime.lastError;
     for (const event of response?.events || []) consumeEvent(event, false);
     renderAll();
+    port.postMessage({ type: "PANEL_READY", tabId: inspectedTabId });
   }
 );
 

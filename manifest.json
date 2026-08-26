@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MQTT Local DevTools",
-  "version": "0.7.1",
+  "version": "0.7.3",
   "description": "在 Chrome/Edge DevTools 中查看网页已有的 MQTT over WebSocket 连接与报文。",
   "icons": {
     "16": "icons/icon16.png",

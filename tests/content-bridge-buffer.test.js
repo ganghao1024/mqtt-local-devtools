@@ -6,7 +6,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 
-test("content bridge applies count and total-byte limits while accepting new events", () => {
+test("content bridge uses standby and live replay limits while accepting new events", () => {
   const listeners = {};
   let runtimeListener;
   const window = {
@@ -37,7 +37,7 @@ test("content bridge applies count and total-byte limits while accepting new eve
     context
   );
 
-  for (let index = 1; index <= 5001; index += 1) {
+  for (let index = 1; index <= 1001; index += 1) {
     listeners.message({
       source: window,
       data: {
@@ -53,11 +53,38 @@ test("content bridge applies count and total-byte limits while accepting new eve
     null,
     (response) => { snapshot = response; }
   );
-  assert.equal(snapshot.events.length, 5000);
+  assert.equal(snapshot.events.length, 1000);
   assert.equal(snapshot.events[0].id, "event-2");
-  assert.equal(snapshot.events.at(-1).id, "event-5001");
+  assert.equal(snapshot.events.at(-1).id, "event-1001");
+  assert.equal(snapshot.maxBufferedEvents, 1000);
+  assert.equal(snapshot.maxBufferedBytes, 8 * 1024 * 1024);
+  assert.equal(snapshot.replayMode, "standby");
 
-  for (let index = 1; index <= 40; index += 1) {
+  let modeResponse;
+  runtimeListener(
+    { type: "MQTT_MONITOR_SET_REPLAY_MODE", panelConnected: true },
+    null,
+    (response) => { modeResponse = response; }
+  );
+  assert.equal(modeResponse.replayMode, "live");
+  assert.equal(modeResponse.maxBufferedEvents, 200);
+  assert.equal(modeResponse.maxBufferedBytes, 2 * 1024 * 1024);
+
+  runtimeListener(
+    { type: "MQTT_MONITOR_GET_SNAPSHOT" },
+    null,
+    (response) => { snapshot = response; }
+  );
+  assert.equal(snapshot.events.length, 200);
+  assert.equal(snapshot.events[0].id, "event-802");
+  assert.equal(snapshot.events.at(-1).id, "event-1001");
+
+  runtimeListener(
+    { type: "MQTT_MONITOR_SET_REPLAY_MODE", panelConnected: false },
+    null,
+    () => {}
+  );
+  for (let index = 1; index <= 12; index += 1) {
     listeners.message({
       source: window,
       data: {
@@ -76,7 +103,9 @@ test("content bridge applies count and total-byte limits while accepting new eve
     null,
     (response) => { snapshot = response; }
   );
-  assert.ok(snapshot.events.length < 5000);
+  assert.ok(snapshot.events.length < 1000);
   assert.ok(snapshot.bufferedBytes <= snapshot.maxBufferedBytes);
-  assert.equal(snapshot.events.at(-1).id, "large-40");
+  assert.equal(snapshot.maxBufferedBytes, 8 * 1024 * 1024);
+  assert.equal(snapshot.replayMode, "standby");
+  assert.equal(snapshot.events.at(-1).id, "large-12");
 });

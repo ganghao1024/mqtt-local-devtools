@@ -5,6 +5,8 @@ importScripts("background-runtime.js");
 const backgroundRuntime = self.__MQTT_LOCAL_DEVTOOLS_BACKGROUND_RUNTIME__;
 const panelPorts = new Map();
 const panelTabUrls = new Map();
+const readyPanelPorts = new Set();
+const HTTP_URL_PATTERNS = ["http://*/*", "https://*/*"];
 
 function ignoreActionError(operation) {
   if (operation && typeof operation.catch === "function") {
@@ -21,23 +23,57 @@ function clearMqttBadge(tabId) {
   ignoreActionError(chrome.action.setBadgeText({ tabId, text: "" }));
 }
 
+function hasPanelForSourceTab(sourceTab) {
+  for (const [panelTabId, ports] of panelPorts.entries()) {
+    if (![...ports].some((port) => readyPanelPorts.has(port))) continue;
+    if (backgroundRuntime.shouldDeliverEvent({
+      sourceTabId: sourceTab.id,
+      sourceUrl: sourceTab.url || "",
+      panelTabId,
+      panelUrl: panelTabUrls.get(panelTabId) || ""
+    })) return true;
+  }
+  return false;
+}
+
+function syncReplayModeForTab(tab) {
+  if (!tab?.id) return;
+  chrome.tabs.sendMessage(tab.id, {
+    type: "MQTT_MONITOR_SET_REPLAY_MODE",
+    panelConnected: hasPanelForSourceTab(tab)
+  }, () => {
+    void chrome.runtime.lastError;
+  });
+}
+
+function refreshReplayModes() {
+  chrome.tabs.query({ url: HTTP_URL_PATTERNS }, (tabs) => {
+    if (chrome.runtime.lastError) return;
+    for (const tab of tabs) syncReplayModeForTab(tab);
+  });
+}
+
 function addPanelPort(tabId, port) {
   if (!panelPorts.has(tabId)) panelPorts.set(tabId, new Set());
   panelPorts.get(tabId).add(port);
   chrome.tabs.get(tabId, (tab) => {
     if (chrome.runtime.lastError) return;
     panelTabUrls.set(tabId, tab.url || "");
+    if (readyPanelPorts.has(port)) refreshReplayModes();
   });
 }
 
 function removePanelPort(port) {
+  let changed = false;
+  readyPanelPorts.delete(port);
   for (const [tabId, ports] of panelPorts.entries()) {
-    ports.delete(port);
+    if (ports.delete(port)) changed = true;
     if (ports.size === 0) {
       panelPorts.delete(tabId);
       panelTabUrls.delete(tabId);
     }
   }
+  if (changed) refreshReplayModes();
 }
 
 function broadcastFromSourceTab(sourceTab, message) {
@@ -106,11 +142,24 @@ chrome.runtime.onConnect.addListener((port) => {
     if (message?.type === "PANEL_INIT" && Number.isInteger(message.tabId)) {
       addPanelPort(message.tabId, port);
     }
+    if (
+      message?.type === "PANEL_READY"
+      && Number.isInteger(message.tabId)
+      && panelPorts.get(message.tabId)?.has(port)
+    ) {
+      readyPanelPorts.add(port);
+      refreshReplayModes();
+    }
   });
   port.onDisconnect.addListener(() => removePanelPort(port));
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type === "MQTT_MONITOR_BRIDGE_READY" && sender.tab?.id !== undefined) {
+    sendResponse({ panelConnected: hasPanelForSourceTab(sender.tab) });
+    return false;
+  }
+
   if (message?.type === "MQTT_MONITOR_EVENTS" && sender.tab?.id !== undefined) {
     const tabId = sender.tab.id;
     const events = Array.isArray(message.events) ? message.events : [];
@@ -152,10 +201,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.status === "loading") clearMqttBadge(tabId);
-  if (changeInfo.url && panelPorts.has(tabId)) panelTabUrls.set(tabId, changeInfo.url);
+  if (changeInfo.url && panelPorts.has(tabId)) {
+    panelTabUrls.set(tabId, changeInfo.url);
+    refreshReplayModes();
+  }
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
+  const hadPanel = panelPorts.has(tabId);
   panelPorts.delete(tabId);
   panelTabUrls.delete(tabId);
+  if (hadPanel) refreshReplayModes();
 });
