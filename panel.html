@@ -8,17 +8,27 @@
   </head>
   <body>
     <header class="app-header">
-      <div class="brand" aria-label="MQTT Monitor">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M7 12a5 5 0 0 1 8.8-3.2M17 12a5 5 0 0 1-8.8 3.2" />
-            <path d="m14.4 6.8 1.8 2.1-2.7.7M9.6 17.2l-1.8-2.1 2.7-.7" />
-          </svg>
-        </span>
-        <span class="brand-name">MQTT</span>
+      <div class="header-leading">
+        <div class="brand" aria-label="MQTT Local DevTools">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M7 12a5 5 0 0 1 8.8-3.2M17 12a5 5 0 0 1-8.8 3.2" />
+              <path d="m14.4 6.8 1.8 2.1-2.7.7M9.6 17.2l-1.8-2.1 2.7-.7" />
+            </svg>
+          </span>
+          <span class="brand-name">DevTools</span>
+        </div>
+        <nav class="module-tabs" aria-label="工具模块">
+          <button id="mqttModuleButton" class="module-tab selected" type="button" aria-selected="true">
+            MQTT 报文
+          </button>
+          <button id="httpModuleButton" class="module-tab" type="button" aria-selected="false">
+            HTTP 请求
+          </button>
+        </nav>
       </div>
 
-      <div class="header-actions">
+      <div id="mqttHeaderActions" class="header-actions">
         <span id="headerStats" class="header-stats" aria-live="polite">0 条报文 · 0 msg/s</span>
         <button id="pauseButton" class="action-button" type="button">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14" /></svg>
@@ -35,7 +45,7 @@
       </div>
     </header>
 
-    <main class="workspace">
+    <main id="mqttWorkspace" class="workspace">
       <aside id="connectionsPane" class="connections-pane">
         <label class="search-field sidebar-search" for="topicSearchInput">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m16 16 4 4" /></svg>
@@ -195,13 +205,129 @@
       </aside>
     </main>
 
+    <main id="httpWorkspace" class="http-workspace hidden" aria-label="HTTP 请求调试">
+      <section id="curlImportCard" class="curl-import-card" aria-labelledby="curlImportTitle">
+        <div class="http-section-heading">
+          <div>
+            <strong id="curlImportTitle">导入 cURL</strong>
+            <span>支持 Chrome 的 Copy as cURL (bash/cmd)，粘贴后自动解析，不会自动发送。</span>
+          </div>
+          <div class="inline-actions">
+            <button id="parseCurlButton" class="action-button compact" type="button">解析 cURL</button>
+            <button id="clearHttpButton" class="action-button compact" type="button">清空</button>
+          </div>
+        </div>
+        <textarea id="curlInput" class="curl-input" rows="3" spellcheck="false" placeholder="curl 'http://localhost:4300/api/example' -H 'Authorization: Bearer ...' --data-raw '{&quot;key&quot;:&quot;value&quot;}'"></textarea>
+        <div id="curlParseStatus" class="inline-status" aria-live="polite">等待粘贴 cURL</div>
+      </section>
+
+      <div
+        id="httpTopResizer"
+        class="http-pane-resizer"
+        role="separator"
+        tabindex="0"
+        aria-label="调整 cURL 导入与请求配置高度"
+        aria-orientation="horizontal"
+        aria-controls="curlImportCard httpRequestCard"
+      ></div>
+
+      <section id="httpRequestCard" class="http-request-card" aria-labelledby="httpRequestTitle">
+        <form id="httpRequestForm">
+          <h2 id="httpRequestTitle" class="visually-hidden">HTTP 请求配置</h2>
+          <div class="request-line">
+            <select id="httpMethod" class="method-select" aria-label="请求方法">
+              <option>GET</option>
+              <option>POST</option>
+              <option>PUT</option>
+              <option>PATCH</option>
+              <option>DELETE</option>
+              <option>HEAD</option>
+              <option>OPTIONS</option>
+            </select>
+            <input id="httpUrl" class="request-url" type="url" required spellcheck="false" placeholder="http://localhost:4300/api/example" aria-label="请求 URL" />
+            <button id="sendHttpButton" class="action-button primary send-button" type="submit">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 12 16-8-5 16-3-6-8-2Z" /><path d="m12 14 3-3" /></svg>
+              <span>发送</span>
+            </button>
+            <button id="cancelHttpButton" class="action-button danger hidden" type="button">取消</button>
+          </div>
+
+          <div class="editor-tabs" role="tablist" aria-label="请求配置">
+            <button id="paramsTabButton" class="editor-tab selected" type="button" role="tab" aria-selected="true" aria-controls="paramsEditor">Params <span id="paramsCount">0</span></button>
+            <button id="headersTabButton" class="editor-tab" type="button" role="tab" aria-selected="false" aria-controls="headersEditor">Headers <span id="headersCount">0</span></button>
+            <button id="bodyTabButton" class="editor-tab" type="button" role="tab" aria-selected="false" aria-controls="bodyEditor">Body <span id="bodyCount">0</span></button>
+          </div>
+
+          <div class="request-editor-wrap">
+            <section id="paramsEditor" class="request-editor" role="tabpanel" aria-labelledby="paramsTabButton">
+              <div class="key-value-heading"><span></span><span>参数名</span><span>参数值</span><span></span></div>
+              <div id="paramsRows" class="key-value-rows"></div>
+              <button id="addParamButton" class="add-row-button" type="button">＋ 添加参数</button>
+            </section>
+            <section id="headersEditor" class="request-editor hidden" role="tabpanel" aria-labelledby="headersTabButton">
+              <div class="key-value-heading"><span></span><span>Header 名称</span><span>Header 值</span><span></span></div>
+              <div id="headersRows" class="key-value-rows"></div>
+              <button id="addHeaderButton" class="add-row-button" type="button">＋ 添加 Header</button>
+              <p class="request-note">Cookie、Host、Content-Length、Sec-* 等浏览器禁止手动设置的请求头会在发送时跳过。</p>
+            </section>
+            <section id="bodyEditor" class="request-editor body-editor hidden" role="tabpanel" aria-labelledby="bodyTabButton">
+              <div class="body-toolbar">
+                <label for="bodyType">内容</label>
+                <select id="bodyType">
+                  <option value="none">无</option>
+                  <option value="json">JSON</option>
+                  <option value="text">Text</option>
+                </select>
+                <button id="formatBodyButton" class="text-button" type="button">格式化 JSON</button>
+              </div>
+              <textarea id="httpBody" spellcheck="false" placeholder="请求 Body"></textarea>
+            </section>
+          </div>
+        </form>
+      </section>
+
+      <div
+        id="httpBottomResizer"
+        class="http-pane-resizer"
+        role="separator"
+        tabindex="0"
+        aria-label="调整请求配置与响应高度"
+        aria-orientation="horizontal"
+        aria-controls="httpRequestCard httpResponseCard"
+      ></div>
+
+      <section id="httpResponseCard" class="http-response-card" aria-labelledby="httpResponseTitle">
+        <div class="response-heading">
+          <div class="response-title-row">
+            <strong id="httpResponseTitle">响应</strong>
+            <span id="responseStatusBadge" class="response-status idle">尚未发送</span>
+            <span id="responseMeta" class="response-meta"></span>
+          </div>
+          <button id="copyResponseButton" class="action-button compact" type="button" disabled>复制响应</button>
+        </div>
+        <div class="editor-tabs response-tabs" role="tablist" aria-label="响应内容">
+          <button id="responseBodyTabButton" class="editor-tab selected" type="button" role="tab" aria-selected="true" aria-controls="responseBodyPanel">Body</button>
+          <button id="responseHeadersTabButton" class="editor-tab" type="button" role="tab" aria-selected="false" aria-controls="responseHeadersPanel">Headers <span id="responseHeadersCount">0</span></button>
+        </div>
+        <div id="responseBodyPanel" class="response-panel" role="tabpanel" aria-labelledby="responseBodyTabButton">
+          <pre id="responseBody" class="response-code">发送请求后在这里查看响应。</pre>
+        </div>
+        <div id="responseHeadersPanel" class="response-panel hidden" role="tabpanel" aria-labelledby="responseHeadersTabButton">
+          <pre id="responseHeaders" class="response-code"></pre>
+        </div>
+      </section>
+    </main>
+
     <footer class="statusbar app-statusbar">
-      <span class="listen-status"><span id="statusIndicator" class="status-dot"></span><span id="statusText">正在连接页面…</span></span>
-      <span class="status-meta"><span id="packetCount">0 条报文</span><span class="shortcuts">Esc 清筛选 · Space 暂停 · / 搜索</span><span>v0.7.3</span></span>
+      <span id="mqttFooterStatus" class="listen-status"><span id="statusIndicator" class="status-dot"></span><span id="statusText">正在连接页面…</span></span>
+      <span id="httpFooterStatus" class="listen-status hidden"><span class="status-dot ready"></span><span id="httpStatusText">HTTP 请求数据仅保留在当前 DevTools 会话内</span></span>
+      <span class="status-meta"><span id="packetCount">0 条报文</span><span class="shortcuts">Esc 清筛选 · Space 暂停 · / 搜索</span><span>v0.8.0</span></span>
     </footer>
 
     <script src="ring-buffer.js"></script>
     <script src="panel-runtime.js"></script>
+    <script src="http-client-runtime.js"></script>
     <script src="panel.js"></script>
+    <script src="http-client.js"></script>
   </body>
 </html>

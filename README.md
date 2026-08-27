@@ -1,11 +1,16 @@
 # MQTT Local DevTools
 
-一个用于本地、测试和线上页面的 Chrome / Edge DevTools 插件。只要网页通过 `ws://` 或 `wss://` 使用 MQTT over WebSocket，就可以在 DevTools 中查看已有连接和报文；插件不会创建第二个 MQTT 客户端。
+一个用于本地、测试和线上页面的 Chrome / Edge DevTools 网络调试插件。它既能查看页面已有的 MQTT over WebSocket 连接和报文，也能导入浏览器复制的 cURL，编辑参数、请求头和 Body 后手动发送 HTTP 请求。MQTT 模块不会创建第二个 MQTT 客户端。
 
 ![MQTT Local DevTools 面板](store-assets/screenshot-1280x800.png)
 
 ## 功能
 
+- 在 MQTT 监听与 HTTP 请求两个模块之间切换
+- 粘贴 Chrome / Edge “Copy as cURL (bash/cmd)” 内容并自动解析 Method、URL、Query、Headers 和 Body
+- 在发送前启用、禁用、新增或删除 Query 参数和请求头，并编辑 JSON / Text Body
+- 显示 HTTP 状态码、耗时、大小、格式化 JSON 响应和响应头
+- cURL 导入、请求配置和响应三个区域可通过上下分隔条调整高度；方向键可微调，双击恢复默认
 - 展示连接地址、Client ID、MQTT 版本和连接状态
 - 解析 MQTT 3.1.1 与 MQTT 5.0 常用报文
 - 展示发送和接收的 CONNECT、PUBLISH、SUBSCRIBE、PING、ACK 等报文
@@ -56,7 +61,7 @@
 5. 打开需要调试的本地或线上页面并刷新。
 6. 打开浏览器开发者工具，在顶部选择 **MQTT** 面板。
 
-插件安装时会请求所有 HTTP/HTTPS 网站的访问权限，以便在页面脚本创建 WebSocket 前注入 MQTT 监听器。
+插件安装时会请求所有 HTTP/HTTPS 网站的访问权限，以便在页面脚本创建 WebSocket 前注入 MQTT 监听器，以及在用户明确点击“发送”后访问所填写的 HTTP/HTTPS 目标。
 
 ## 使用说明
 
@@ -72,9 +77,21 @@
 
 连接列表只显示已确认使用 MQTT 的 WebSocket。确认依据包括 WebSocket 子协议包含 `mqtt`，或捕获到合法的 CONNECT / CONNACK 报文。本地开发模式会跨端口聚合，例如在一个 localhost 页面打开的 MQTT 面板中，也能看到另一个 localhost 端口建立的连接；线上页面不会跨站点聚合。
 
+### HTTP 请求调试
+
+1. 在 DevTools Network 中右键目标请求，选择 **Copy as cURL (bash)** 或 **Copy as cURL (cmd)**。
+2. 切换到 **HTTP 请求** 模块，粘贴 cURL；插件会自动解析，但不会自动发送。
+3. 按需修改 Method、URL、Params、Headers 和 Body。
+4. 点击“发送”或按 `Ctrl+Enter`，查看响应 Body 和 Headers。
+
+三个 HTTP 区域之间的横向分隔条可上下拖动。聚焦分隔条后可用 `ArrowUp` / `ArrowDown` 以 8 px 步长微调，按住 `Shift` 时为 32 px；双击任一分隔条可恢复默认高度。
+
+HTTP 模块直接使用浏览器 `fetch` 发送请求，不执行 shell 命令。`Cookie`、`Host`、`Content-Length`、`Origin`、`Referer`、`User-Agent`、`Sec-*` 等浏览器禁止手动设置的 Header 会跳过；当前不支持 cURL `--form/-F` 多段表单。响应原文可复制，界面最多渲染前 5 MiB。
+
 ### 安全与隐私
 
 - Payload、Client ID、Topic 和 WebSocket 地址不会上传到开发者或第三方服务器，只保留在当前浏览器会话内存中。
+- HTTP cURL、Authorization、Body 和响应不写入本地存储；只在用户点击“发送”后将请求发往用户填写的目标服务器。
 - 插件不包含账号、密码、API Key、遥测上报或远程代码。
 - 点击“导出 JSON”时，数据才会由浏览器下载到本地；导出内容可能包含业务 Payload，请自行妥善保管。
 - 插件只观察当前页面使用 WebSocket API 收发的数据，不劫持连接，也不会读取其他应用或浏览器外部的 WSS 流量。

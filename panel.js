@@ -1067,6 +1067,7 @@ elements.copyButton.addEventListener("click", async () => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (document.body.dataset.activeModule === "http") return;
   const target = event.target;
   const isEditing = target instanceof HTMLElement
     && (target.matches("input, select, textarea") || target.isContentEditable);
