@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href="data:," />
     <title>MQTT Panel Interaction Harness</title>
-    <link rel="stylesheet" href="../panel.css?v=0.8.0" />
+<link rel="stylesheet" href="../panel.css?v=0.8.1" />
   </head>
   <body>
     <output id="packetNodeCreations" hidden>0</output>
@@ -78,7 +78,7 @@
 
     <footer class="statusbar app-statusbar">
       <span class="listen-status"><span id="statusIndicator" class="status-dot"></span><span id="statusText">测试中</span></span>
-      <span class="status-meta"><span id="packetCount">0 条报文</span><span class="shortcuts">Esc 清筛选 · Space 暂停 · / 搜索</span><span>v0.8.0</span></span>
+      <span class="status-meta"><span id="packetCount">0 条报文</span><span class="shortcuts">Esc 清筛选 · Space 暂停 · / 搜索</span><span>v0.8.1</span></span>
     </footer>
 
     <script>
@@ -184,9 +184,9 @@
         };
       })();
     </script>
-    <script src="../ring-buffer.js?v=0.8.0"></script>
-    <script src="../panel-runtime.js?v=0.8.0"></script>
-    <script src="../panel.js?v=0.8.0"></script>
+    <script src="../ring-buffer.js?v=0.8.1"></script>
+    <script src="../panel-runtime.js?v=0.8.1"></script>
+    <script src="../panel.js?v=0.8.1"></script>
     <script>
       const harnessInterval = Number(new URLSearchParams(location.search).get("interval"));
       window.mqttHarness.start(Number.isFinite(harnessInterval) && harnessInterval > 0 ? harnessInterval : 20);

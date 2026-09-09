@@ -475,10 +475,62 @@ function mqttConnections() {
   return Array.from(state.connections.values()).filter((connection) => connection.mqtt);
 }
 
-function filteredPackets() {
+let payloadGroupField = "";
+let payloadGroupSelected = null;
+let classifyPayload = panelRuntime.createPayloadClassifier("");
+const payloadGroupInput = document.querySelector("#payloadGroupField");
+const payloadGroupTags = document.querySelector("#payloadGroupTags");
+
+function renderPayloadGroups(packets) {
+  if (!payloadGroupTags) return;
+  const counts = new Map();
+  if (payloadGroupField) {
+    for (const event of packets) {
+      for (const value of classifyPayload(event)) counts.set(value, (counts.get(value) || 0) + 1);
+    }
+  }
+  const groups = payloadGroupField ? [[null, packets.length], ...counts] : [];
+  if (payloadGroupSelected !== null && !counts.has(payloadGroupSelected)) groups.push([payloadGroupSelected, 0]);
+  const existing = new Map([...payloadGroupTags.children].map(node => [node.dataset.key, node]));
+  for (const [key, count] of groups) {
+    const id = key === null ? "all" : key;
+    let button = existing.get(id);
+    if (!button) {
+      button = document.createElement("button");
+      button.type = "button";
+      button.className = "payload-group-tag";
+      button.dataset.key = id;
+      button.addEventListener("click", () => {
+        payloadGroupSelected = key;
+        elements.tableWrap.scrollTop = 0;
+        renderAll();
+      });
+      payloadGroupTags.append(button);
+    }
+    existing.delete(id);
+    const label = key === null ? "全部" : key === "missing" ? "无字段 / 非 JSON" : String(JSON.parse(key)) || '""';
+    const text = `${label} (${count})`;
+    if (button.textContent !== text) button.textContent = text;
+    button.title = text;
+    button.setAttribute("aria-pressed", String(payloadGroupSelected === key));
+  }
+  for (const node of existing.values()) node.remove();
+}
+
+const payloadGroupDebouncer = panelRuntime.createDebouncer((value) => {
+  payloadGroupField = value.trim();
+  payloadGroupSelected = null;
+  classifyPayload = panelRuntime.createPayloadClassifier(payloadGroupField);
+  elements.tableWrap.scrollTop = 0;
+  renderAll();
+}, SEARCH_DEBOUNCE_MS);
+payloadGroupInput?.addEventListener("input", () => payloadGroupDebouncer.schedule(payloadGroupInput.value));
+
+function filteredPackets(ignorePayloadGroup = false) {
   const search = state.activeSearch;
   return state.events.toArray().filter((event) => {
     if (event.kind !== "packet") return false;
+    if (!ignorePayloadGroup && payloadGroupField && payloadGroupSelected !== null && !classifyPayload(event).includes(payloadGroupSelected)) return false;
     if (state.selectedConnectionId !== "all" && event.connectionId !== state.selectedConnectionId) return false;
     if (!panelRuntime.eventMatchesTopicGroup(event, state.selectedTopicGroup)) return false;
     if (!panelRuntime.eventMatchesTopic(event, state.selectedTopic)) return false;
@@ -855,7 +907,11 @@ function renderAll() {
   renderConnectionOptions(connections);
   renderConnections(connections);
   renderTopicGroups();
-  renderPackets(filteredPackets());
+  const basePackets = filteredPackets(true);
+  renderPayloadGroups(basePackets);
+  renderPackets(payloadGroupField && payloadGroupSelected !== null
+    ? basePackets.filter(event => classifyPayload(event).includes(payloadGroupSelected))
+    : basePackets);
   renderStatus();
 }
 
@@ -953,6 +1009,8 @@ function togglePause() {
 }
 
 function clearFilters() {
+  payloadGroupDebouncer.cancel();
+  payloadGroupSelected = null;
   state.selectedConnectionId = "all";
   state.selectedTopicGroup = "all";
   state.selectedTopic = "all";

@@ -6,6 +6,7 @@
 
 ## 功能
 
+- 中间报文列表支持 Payload 字段分类：输入 `sn` 递归查找同名字段，或输入 `data.sn` 指定路径；点击字段值标签筛选，并显示各类报文数量，可与 Topic、连接、方向和搜索共同使用。
 - 在 MQTT 监听与 HTTP 请求两个模块之间切换
 - 粘贴 Chrome / Edge “Copy as cURL (bash/cmd)” 内容并自动解析 Method、URL、Query、Headers 和 Body
 - 在发送前启用、禁用、新增或删除 Query 参数和请求头，并编辑 JSON / Text Body

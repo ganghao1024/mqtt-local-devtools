@@ -421,7 +421,51 @@
     };
   }
 
+  // Cache only extracted values; evicted packet objects can be garbage-collected.
+  function createPayloadClassifier(field) {
+    const path = String(field || "").trim().split(".").filter(Boolean);
+    const cache = new WeakMap();
+    return function classify(event) {
+      if (cache.has(event)) return cache.get(event);
+      const values = new Set();
+      function add(value) {
+        if (Array.isArray(value)) value.forEach(add);
+        else if (value !== null && ["string", "number", "boolean"].includes(typeof value)) {
+          values.add(JSON.stringify(value));
+        }
+      }
+      try {
+        if (path.length) {
+          const payload = JSON.parse(event.packet?.payloadText || "");
+          const pending = [{ value: payload, index: 0 }];
+          while (pending.length) {
+            const { value, index } = pending.pop();
+            if (!value || typeof value !== "object") continue;
+            if (Array.isArray(value)) {
+              for (const child of value) pending.push({ value: child, index });
+            } else if (path.length === 1) {
+              for (const [key, child] of Object.entries(value)) {
+                if (key === path[0]) add(child);
+                if (child && typeof child === "object") pending.push({ value: child, index: 0 });
+              }
+            } else if (Object.prototype.hasOwnProperty.call(value, path[index])) {
+              const child = value[path[index]];
+              if (index === path.length - 1) add(child);
+              else pending.push({ value: child, index: index + 1 });
+            }
+          }
+        }
+      } catch {
+        // Non-JSON and truncated payloads belong to the missing-field category.
+      }
+      const result = values.size ? [...values].sort() : ["missing"];
+      cache.set(event, result);
+      return result;
+    };
+  }
+
   const api = Object.freeze({
+    createPayloadClassifier,
     appendWithLimit,
     constrainPaneWidths,
     createDebouncer,
