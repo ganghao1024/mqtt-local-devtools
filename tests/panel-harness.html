@@ -10,7 +10,7 @@
   <body>
     <output id="packetNodeCreations" hidden>0</output>
     <header class="app-header">
-      <div class="brand"><span class="brand-mark">↻</span><span class="brand-name">MQTT</span></div>
+      <div class="brand"><img class="brand-mark" src="../icons/icon32.png" alt="" /><span class="brand-name">DevTools</span></div>
       <div class="header-actions">
         <span id="headerStats" class="header-stats">0 条报文 · 0 msg/s</span>
         <button id="pauseButton" class="action-button" type="button"><span class="button-label">暂停</span></button>
@@ -44,6 +44,10 @@
           <label class="search-field global-search" for="searchInput"><input id="searchInput" type="search" placeholder="搜索 Topic / Payload / Client ID" /></label>
           <span id="activeTopicFilter" class="active-filter hidden"></span>
           <span id="resultCount" class="result-count">0 条结果</span>
+        </div>
+        <div class="payload-grouping">
+          <label class="search-field" for="payloadGroupField"><input id="payloadGroupField" type="search" placeholder="分类字段，如 sn 或 data.sn" aria-label="Payload 分类字段" autocomplete="off" /></label>
+          <div id="payloadGroupTags" class="payload-group-tags" aria-label="Payload 分类标签"></div>
         </div>
         <div class="table-wrap">
           <table><thead><tr><th>时间</th><th>方向</th><th>类型</th><th>Topic / 信息</th><th>QoS</th><th>Payload 预览</th></tr></thead><tbody id="packetRows"></tbody></table>
@@ -113,7 +117,7 @@
             sourceTab,
             packet: subscribe
               ? { type: 8, typeName: "SUBSCRIBE", topics: [{ topic: "demo/cmd/+", qos: 1 }], rawHex: "82 00" }
-              : { type: 3, typeName: "PUBLISH", topic, qos: 0, payloadEncoding: "utf-8", payloadSize: 64, payloadText: JSON.stringify({ sequence, createTime: Date.now(), status: "online" }), rawHex: "30 00" }
+              : { type: 3, typeName: "PUBLISH", topic, qos: 0, payloadEncoding: "utf-8", payloadSize: 96, payloadText: JSON.stringify({ sn: "UAV-" + (5200 + sequence % 3), sequence, createTime: Date.now(), status: sequence % 5 ? "online" : "warning" }), rawHex: "30 00" }
           };
         }
         const initialEvents = [
@@ -122,6 +126,7 @@
           { id: "connection-b", kind: "connection", timestamp: Date.now(), sourceTab, connection: { id: "b", mqtt: true, clientId: "flight-mqtt-client", url: "wss://backup-mqtt.example.test/mqtt", status: "open" } }
         ];
         const largePayload = JSON.stringify({
+          sn: "UAV-5200",
           createTime: new Date().toISOString(),
           deviceId: "uav-5200",
           status: "online",
