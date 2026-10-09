@@ -20,9 +20,49 @@ const {
   pruneSourceTabData,
   reconcileKeyedChildren,
   syncConnectionSelect,
+  urlsHaveSameHostname,
+  isLocalDevelopmentUrl,
+  mqttConnectionMatchesSource,
   virtualWindow,
   visiblePacketsByTimeOrder
 } = require("../panel-runtime.js");
+
+test("hostname comparison ignores port and protocol", () => {
+  assert.equal(
+    urlsHaveSameHostname("ws://117.141.47.240:42099/mqtt", "http://117.141.47.240:42099/#/command-dispatch"),
+    true
+  );
+  assert.equal(
+    urlsHaveSameHostname("ws://192.168.105.11:9951/mqtt", "http://117.141.47.240:42099/#/command-dispatch"),
+    false
+  );
+  assert.equal(
+    urlsHaveSameHostname("wss://117.141.47.240:443/mqtt", "https://117.141.47.240:8443/app"),
+    true
+  );
+});
+
+test("local development pages can observe MQTT brokers on other hostnames", () => {
+  for (const host of ["localhost", "app.localhost", "127.0.0.1", "127.0.0.2", "10.0.0.8", "172.16.0.1", "172.31.255.254", "192.168.1.20", "169.254.1.2", "[::1]", "[fd00::1]", "[fe80::1]"]) {
+    const sourceUrl = `http://${host}:4300/app`;
+    assert.equal(isLocalDevelopmentUrl(sourceUrl), true, host);
+    assert.equal(mqttConnectionMatchesSource("wss://broker.example.com:8084/mqtt", sourceUrl), true, host);
+    assert.equal(mqttConnectionMatchesSource("ws://203.0.113.10:8083/mqtt", sourceUrl), true, host);
+  }
+});
+
+test("remote pages retain hostname filtering and malformed URLs are rejected", () => {
+  for (const host of ["172.15.0.1", "172.32.0.1", "192.169.1.1", "203.0.113.10", "example.com", "localhost.example.com", "[2001:db8::1]"]) {
+    const sourceUrl = `https://${host}:8443/app`;
+    assert.equal(isLocalDevelopmentUrl(sourceUrl), false, host);
+    assert.equal(mqttConnectionMatchesSource("wss://broker.example.com/mqtt", sourceUrl), false, host);
+    assert.equal(mqttConnectionMatchesSource(`wss://${host}:8084/mqtt`, sourceUrl), true, host);
+  }
+  assert.equal(mqttConnectionMatchesSource("bad-url", "http://localhost:4300"), false);
+  assert.equal(mqttConnectionMatchesSource("ws://broker.example.com", "bad-url"), false);
+  assert.equal(mqttConnectionMatchesSource("https://broker.example.com", "http://localhost:4300"), false);
+  assert.equal(isLocalDevelopmentUrl("file:///localhost/app.html"), false);
+});
 
 test("packet empty state distinguishes no captured packets from no filter matches", () => {
   assert.deepEqual(packetEmptyState(0, 0), {

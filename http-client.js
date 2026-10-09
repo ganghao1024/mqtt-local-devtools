@@ -3,6 +3,7 @@
 (function installHttpClient() {
   const runtime = globalThis.__MQTT_LOCAL_DEVTOOLS_HTTP_CLIENT_RUNTIME__;
   const MAX_RENDERED_RESPONSE_CHARS = 5 * 1024 * 1024;
+  const JSON_CHILD_BATCH_SIZE = 100;
   const MODULE_STORAGE_KEY = "mqtt-local-devtools-active-module";
   const HTTP_PANE_STORAGE_KEY = "mqtt-local-devtools-http-pane-heights";
   const HTTP_PANE_DEFAULTS = Object.freeze({ importHeight: 148, requestHeight: 266 });
@@ -491,6 +492,99 @@
       : "响应未暴露可读取的 Header。";
   }
 
+  function appendJsonValue(parent, value, key, isLast = true, expand = false) {
+    const prefix = key === null ? "" : `${JSON.stringify(key)}: `;
+    const suffix = isLast ? "" : ",";
+    if (value === null || typeof value !== "object") {
+      const line = document.createElement("div");
+      line.className = "json-line";
+      if (key !== null) {
+        const label = document.createElement("span");
+        label.className = "json-key";
+        label.textContent = prefix;
+        line.append(label);
+      }
+      const scalar = document.createElement("span");
+      scalar.className = typeof value === "string" ? "json-string" : "json-scalar";
+      scalar.textContent = JSON.stringify(value) + suffix;
+      line.append(scalar);
+      parent.append(line);
+      return;
+    }
+
+    const isArray = Array.isArray(value);
+    const keys = isArray ? null : Object.keys(value);
+    const count = isArray ? value.length : keys.length;
+    const node = document.createElement("details");
+    node.className = "json-node";
+    const summary = document.createElement("summary");
+    if (key !== null) {
+      const label = document.createElement("span");
+      label.className = "json-key";
+      label.textContent = prefix;
+      summary.append(label);
+    }
+    const bracket = document.createElement("span");
+    bracket.className = "json-bracket";
+    bracket.textContent = isArray ? "[" : "{";
+    summary.append(bracket);
+    const hint = document.createElement("span");
+    hint.className = "json-collapsed-hint";
+    hint.textContent = ` … ${count} ${isArray ? "项" : "个字段"} ${isArray ? "]" : "}"}${suffix}`;
+    summary.append(hint);
+    const children = document.createElement("div");
+    children.className = "json-children";
+    const closing = document.createElement("div");
+    closing.className = "json-closing";
+    closing.textContent = (isArray ? "]" : "}") + suffix;
+    node.append(summary, children, closing);
+
+    let rendered = 0;
+    function appendNextBatch() {
+      const end = Math.min(rendered + JSON_CHILD_BATCH_SIZE, count);
+      const fragment = document.createDocumentFragment();
+      for (let index = rendered; index < end; index += 1) {
+        const childKey = isArray ? index : keys[index];
+        appendJsonValue(fragment, value[childKey], isArray ? null : childKey, index === count - 1);
+      }
+      if (children.lastElementChild?.classList.contains("json-show-more")) {
+        children.lastElementChild.remove();
+      }
+      children.append(fragment);
+      rendered = end;
+      if (rendered < count) {
+        const more = document.createElement("button");
+        more.type = "button";
+        more.className = "json-show-more";
+        more.textContent = `显示接下来的 ${Math.min(JSON_CHILD_BATCH_SIZE, count - rendered)} 项（剩余 ${count - rendered} 项）`;
+        more.addEventListener("click", appendNextBatch);
+        children.append(more);
+      }
+    }
+    node.addEventListener("toggle", () => {
+      if (node.open && rendered === 0) appendNextBatch();
+    });
+    if (expand) {
+      node.open = true;
+      appendNextBatch();
+    }
+    parent.append(node);
+  }
+
+  function renderResponseBody(rawText, renderedText, format, truncated) {
+    if (format !== "json" || truncated) {
+      elements.responseBody.textContent = renderedText;
+      return;
+    }
+    try {
+      const parsed = JSON.parse(rawText);
+      elements.responseBody.replaceChildren();
+      appendJsonValue(elements.responseBody, parsed, null, true, true);
+    } catch {
+      elements.responseBody.textContent = renderedText;
+    }
+  }
+
   async function sendRequest() {
     let requestUrl;
     try {
@@ -554,7 +648,7 @@
       elements.responseStatusBadge.className = `response-status ${response.ok ? "success" : "error"}`;
       elements.responseStatusBadge.textContent = `${response.status} ${response.statusText || ""}`.trim();
       elements.responseMeta.textContent = `${Math.round(elapsed)} ms · ${new Blob([rawText]).size} B · ${formatted.format.toUpperCase()}`;
-      elements.responseBody.textContent = renderedText;
+      renderResponseBody(rawText, renderedText, formatted.format, truncated);
       renderResponseHeaders(response.headers);
       state.responseCopyText = rawText;
       elements.copyResponseButton.disabled = false;

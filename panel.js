@@ -430,10 +430,24 @@ function refreshConnectionSearchText(connectionId) {
   }
 }
 
+function eventMatchesSourceHostname(event) {
+  const sourceUrl = event?.sourceTab?.url || event?.pageUrl || "";
+  if (event?.kind === "connection") {
+    return panelRuntime.mqttConnectionMatchesSource(event.connection?.url || "", sourceUrl);
+  }
+  if (event?.kind === "packet") {
+    const knownConnectionUrl = state.connections.get(event.connectionId)?.url || "";
+    const connectionUrl = event.connectionUrl || knownConnectionUrl;
+    return !connectionUrl || panelRuntime.mqttConnectionMatchesSource(connectionUrl, sourceUrl);
+  }
+  return true;
+}
+
 function consumeEvent(event, render = true) {
   if (!event?.id || state.eventIds.has(event.id)) return;
   const sourceSession = panelRuntime.observeSourceSession(state.sourceSessions, event);
   if (sourceSession?.changed) resetSourceTab(sourceSession.sourceTabId);
+  if (!eventMatchesSourceHostname(event)) return;
 
   if (event.kind === "hook-ready") state.pageHookReady = true;
 

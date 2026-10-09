@@ -1,6 +1,6 @@
 {
   "name": "mqtt-local-devtools",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "private": true,
   "description": "Chromium DevTools extension for inspecting MQTT over WebSocket traffic and replaying editable cURL HTTP requests",
   "scripts": {

@@ -76,6 +76,8 @@
 - Topic 分组、缓存总数与实时速率增量维护；全局搜索文本在接收时预计算，并带约 150 ms 防抖。
 - 页面侧使用自适应环形缓冲区：待机时 1000 条或 8 MiB，DevTools 已连接时缩短为 200 条或 2 MiB；DevTools 面板独立保留 5000 条或 32 MiB。
 
+localhost、回环地址和局域网 IP（10.x、172.16–31.x、192.168.x 等）页面可以查看该页面连接到任意 hostname 的 MQTT Broker；线上页面仍要求 Broker 与来源页面的 hostname 相同，端口可不同。DevTools 底部及插件弹窗提供“GitHub 更新”入口，可跳转至最新发布版本。
+
 连接列表只显示已确认使用 MQTT 的 WebSocket。确认依据包括 WebSocket 子协议包含 `mqtt`，或捕获到合法的 CONNECT / CONNACK 报文。本地开发模式会跨端口聚合，例如在一个 localhost 页面打开的 MQTT 面板中，也能看到另一个 localhost 端口建立的连接；线上页面不会跨站点聚合。
 
 ### HTTP 请求调试

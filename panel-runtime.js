@@ -47,6 +47,43 @@
     return Object.freeze({ schedule, cancel, flush });
   }
 
+  function urlsHaveSameHostname(leftValue, rightValue) {
+    try {
+      return new URL(leftValue).hostname === new URL(rightValue).hostname;
+    } catch {
+      return false;
+    }
+  }
+
+  function isLocalDevelopmentUrl(value) {
+    try {
+      const url = new URL(value);
+      if (!["http:", "https:"].includes(url.protocol)) return false;
+      const hostname = url.hostname;
+      if (hostname === "localhost" || hostname.endsWith(".localhost") || hostname === "[::1]") return true;
+      if (/^\[(?:f[cd][0-9a-f]{2}:|fe[89ab][0-9a-f]:)/i.test(hostname)) return true;
+      const octets = hostname.split(".").map(Number);
+      if (octets.length !== 4 || octets.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return false;
+      return octets[0] === 127 || octets[0] === 10 ||
+        (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) ||
+        (octets[0] === 192 && octets[1] === 168) ||
+        (octets[0] === 169 && octets[1] === 254);
+    } catch {
+      return false;
+    }
+  }
+
+  function mqttConnectionMatchesSource(connectionUrl, sourceUrl) {
+    try {
+      const broker = new URL(connectionUrl);
+      const source = new URL(sourceUrl);
+      if (!["ws:", "wss:"].includes(broker.protocol) || !["http:", "https:"].includes(source.protocol)) return false;
+      return isLocalDevelopmentUrl(sourceUrl) || broker.hostname === source.hostname;
+    } catch {
+      return false;
+    }
+  }
+
   function connectionSignature(connections, labelForConnection) {
     return connections
       .map((connection) => `${connection.id}\u0001${labelForConnection(connection)}`)
@@ -485,6 +522,9 @@
     reconcileKeyedChildren,
     syncConnectionSelect,
     topicGroupKey,
+    urlsHaveSameHostname,
+    isLocalDevelopmentUrl,
+    mqttConnectionMatchesSource,
     virtualWindow,
     visiblePacketsByTimeOrder
   });

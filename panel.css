@@ -754,6 +754,84 @@ body.resizing-http-panes * {
   tab-size: 2;
 }
 
+.json-node > summary {
+  display: list-item;
+  width: fit-content;
+  max-width: 100%;
+  cursor: pointer;
+  list-style: none;
+}
+
+.json-node > summary::-webkit-details-marker {
+  display: none;
+}
+
+.json-node > summary::before {
+  display: inline-block;
+  width: 14px;
+  color: var(--muted);
+  content: "▸";
+}
+
+.json-node[open] > summary::before {
+  content: "▾";
+}
+
+.json-node > summary:hover,
+.json-node > summary:focus-visible {
+  background: rgba(88, 166, 255, 0.12);
+  outline: none;
+}
+
+.json-collapsed-hint {
+  color: var(--muted);
+}
+
+.json-node[open] > summary .json-collapsed-hint {
+  display: none;
+}
+
+.json-children {
+  padding-left: 18px;
+}
+
+.json-node:not([open]) > .json-children,
+.json-node:not([open]) > .json-closing {
+  display: none;
+}
+
+.json-closing {
+  padding-left: 14px;
+  color: var(--text-soft);
+}
+
+.json-key {
+  color: #79c0ff;
+}
+
+.json-string {
+  color: #a5d6ff;
+}
+
+.json-scalar {
+  color: #d2a8ff;
+}
+
+.json-show-more {
+  margin: 2px 0 3px 14px;
+  padding: 2px 5px;
+  border: 0;
+  background: transparent;
+  color: #79c0ff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.json-show-more:hover,
+.json-show-more:focus-visible {
+  text-decoration: underline;
+}
+
 .connections-pane,
 .packets-pane,
 .details-pane {
@@ -1605,6 +1683,21 @@ tbody tr.virtual-spacer td {
 .status-meta {
   justify-content: flex-end;
   font-family: var(--mono);
+}
+
+.update-link {
+  flex-shrink: 0;
+  color: var(--accent, #64d7aa);
+  text-decoration: none;
+}
+
+.update-link:hover {
+  text-decoration: underline;
+}
+
+.update-link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }
 
 .shortcuts {

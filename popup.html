@@ -13,6 +13,9 @@
       code { color: #64d7aa; word-break: break-all; }
       .status { margin: 12px 0; padding: 9px 10px; border: 1px solid #343a46; border-radius: 6px; background: #1e222b; }
       .hint { font-size: 12px; }
+      .update-link { display: inline-block; margin-top: 8px; color: #64d7aa; text-decoration: none; }
+      .update-link:hover { text-decoration: underline; }
+      .update-link:focus-visible { outline: 2px solid #64d7aa; outline-offset: 3px; }
     </style>
   </head>
   <body>
@@ -20,6 +23,7 @@
     <p>监控页面自身建立的 MQTT WebSocket，不会额外连接 Broker。</p>
     <div id="site" class="status">正在读取当前页面…</div>
     <p class="hint">所有 HTTP/HTTPS 页面均已启用。刷新页面后打开开发者工具，选择 <strong>MQTT</strong> 面板。</p>
+    <a class="update-link" href="https://github.com/ganghao1024/mqtt-local-devtools/releases/latest" target="_blank" rel="noopener noreferrer" title="在新标签页打开 GitHub 最新发布版本">GitHub 更新 ↗</a>
     <script src="popup.js"></script>
   </body>
 </html>

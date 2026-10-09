@@ -103,6 +103,7 @@
 
         emit("packet", {
           connectionId: state.id,
+          connectionUrl: state.socket.url || state.url,
           direction,
           packet
         });
