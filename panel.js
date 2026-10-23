@@ -83,6 +83,7 @@ const state = {
   connections: new Map(),
   sourceSessions: new Map(),
   selectedConnectionId: "all",
+  connectedOnly: false,
   selectedTopicGroup: "all",
   selectedTopic: "all",
   expandedTopicGroups: new Set(),
@@ -117,6 +118,8 @@ const elements = {
   allConnectionsButton: document.querySelector("#allConnectionsButton"),
   clearTopicFilterButton: document.querySelector("#clearTopicFilterButton"),
   connectionCount: document.querySelector("#connectionCount"),
+  connectedOnlyButton: document.querySelector("#connectedOnlyButton"),
+  connectionsEmptyState: document.querySelector("#connectionsEmptyState"),
   connectionsList: document.querySelector("#connectionsList"),
   topicGroupsList: document.querySelector("#topicGroupsList"),
   topicEmptyState: document.querySelector("#topicEmptyState"),
@@ -560,6 +563,11 @@ function renderConnectionOptions(connections) {
     && !connections.some((item) => item.id === state.selectedConnectionId)
   ) {
     state.selectedConnectionId = "all";
+    state.selectedTopicGroup = "all";
+    state.selectedTopic = "all";
+    state.topicRenderSignature = "";
+    state.forceTopicRender = true;
+    elements.tableWrap.scrollTop = 0;
   }
   panelRuntime.syncConnectionSelect(
     elements.connectionFilter,
@@ -583,6 +591,8 @@ function selectConnection(connectionId) {
 }
 
 function renderConnections(connections) {
+  elements.connectedOnlyButton.setAttribute("aria-pressed", String(state.connectedOnly));
+  elements.connectionsEmptyState.classList.toggle("hidden", !state.connectedOnly || connections.length > 0);
   elements.connectionCount.textContent = String(connections.length);
   elements.allConnectionsButton.classList.toggle("selected", state.selectedConnectionId === "all");
   const signature = JSON.stringify(connections.map((connection) => [
@@ -917,7 +927,7 @@ function renderStatus() {
 }
 
 function renderAll() {
-  const connections = mqttConnections();
+  const connections = mqttConnections().filter((connection) => !state.connectedOnly || connection.status === "open");
   renderConnectionOptions(connections);
   renderConnections(connections);
   renderTopicGroups();
@@ -1023,6 +1033,7 @@ function togglePause() {
 }
 
 function clearFilters() {
+  state.connectedOnly = false;
   payloadGroupDebouncer.cancel();
   payloadGroupSelected = null;
   state.selectedConnectionId = "all";
@@ -1046,6 +1057,15 @@ elements.connectionFilter.addEventListener("change", () => {
   selectConnection(elements.connectionFilter.value);
 });
 elements.allConnectionsButton.addEventListener("click", () => selectConnection("all"));
+elements.connectedOnlyButton.addEventListener("click", () => {
+  state.connectedOnly = !state.connectedOnly;
+  const selected = state.connections.get(state.selectedConnectionId);
+  if (state.connectedOnly && selected && selected.status !== "open") {
+    selectConnection("all");
+  } else {
+    renderAll();
+  }
+});
 elements.clearTopicFilterButton.addEventListener("click", () => {
   state.selectedTopicGroup = "all";
   state.selectedTopic = "all";
@@ -1151,7 +1171,7 @@ document.addEventListener("keydown", (event) => {
     return;
   }
   if (isEditing) return;
-  if (event.key === " ") {
+  if (event.key === " " && !target.closest?.("button")) {
     togglePause();
     event.preventDefault();
     return;

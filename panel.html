@@ -50,6 +50,7 @@
         <section class="sidebar-section connection-section">
           <div class="section-heading">
             <span>连接</span>
+            <button id="connectedOnlyButton" class="text-button connection-toggle" type="button" aria-pressed="false" title="仅显示当前已连接的 MQTT 连接">仅已连接</button>
             <button id="allConnectionsButton" class="text-button" type="button" aria-label="显示全部连接">
               <span id="connectionCount">0</span>
             </button>
@@ -58,6 +59,7 @@
             <option value="all">全部连接</option>
           </select>
           <div id="connectionsList" class="connections-list"></div>
+          <div id="connectionsEmptyState" class="sidebar-empty hidden">暂无已连接的 MQTT 连接</div>
         </section>
 
         <section class="sidebar-section topic-section">
@@ -320,7 +322,7 @@
     <footer class="statusbar app-statusbar">
       <span id="mqttFooterStatus" class="listen-status"><span id="statusIndicator" class="status-dot"></span><span id="statusText">正在连接页面…</span></span>
       <span id="httpFooterStatus" class="listen-status hidden"><span class="status-dot ready"></span><span id="httpStatusText">HTTP 请求数据仅保留在当前 DevTools 会话内</span></span>
-<span class="status-meta"><span id="packetCount">0 条报文</span><span class="shortcuts">Esc 清筛选 · Space 暂停 · / 搜索</span><span>v0.8.3</span><a class="update-link" href="https://github.com/ganghao1024/mqtt-local-devtools/releases/latest" target="_blank" rel="noopener noreferrer" title="在新标签页打开 GitHub 最新发布版本">GitHub 更新 ↗</a></span>
+<span class="status-meta"><span id="packetCount">0 条报文</span><span class="shortcuts">Esc 清筛选 · Space 暂停 · / 搜索</span><span>v0.8.4</span><a class="update-link" href="https://github.com/ganghao1024/mqtt-local-devtools/releases/latest" target="_blank" rel="noopener noreferrer" title="在新标签页打开 GitHub 最新发布版本">GitHub 更新 ↗</a></span>
     </footer>
 
     <script src="ring-buffer.js"></script>

@@ -980,6 +980,25 @@ body.resizing-panes * {
   scrollbar-gutter: stable;
 }
 
+.connection-toggle {
+  margin-left: auto;
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  white-space: nowrap;
+}
+
+.connection-toggle[aria-pressed="true"] {
+  color: #3fb950;
+  border-color: #3fb950;
+  background: rgba(63, 185, 80, 0.12);
+}
+
+.connection-toggle:focus-visible {
+  outline: 2px solid #58a6ff;
+  outline-offset: 2px;
+}
+
 .connection-card {
   width: 100%;
   min-height: 70px;
