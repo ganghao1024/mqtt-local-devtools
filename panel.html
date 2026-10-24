@@ -20,6 +20,7 @@
           <button id="httpModuleButton" class="module-tab" type="button" aria-selected="false">
             HTTP 请求
           </button>
+          <button id="analysisModuleButton" class="module-tab" type="button" aria-selected="false">故障分析</button>
         </nav>
       </div>
 
@@ -124,6 +125,11 @@
           <label class="search-field" for="payloadGroupField"><input id="payloadGroupField" type="search" placeholder="分类字段，如 sn 或 data.sn" aria-label="Payload 分类字段" autocomplete="off" /></label>
           <div id="payloadGroupTags" class="payload-group-tags" aria-label="Payload 分类标签"></div>
         </div>
+        <div class="analysis-capture-toolbar">
+          <span>勾选消息加入分析</span>
+          <button id="addFilteredToAnalysis" class="text-button" type="button">加入当前 Topic 筛选结果（最近 1000 条）</button>
+          <button id="openAnalysisSelection" class="action-button compact" type="button">分析已选 (0)</button>
+        </div>
         <div class="table-wrap">
           <table>
             <thead>
@@ -205,6 +211,8 @@
         </div>
       </aside>
     </main>
+
+    <main id="analysisWorkspace" class="analysis-workspace hidden" aria-label="故障分析"></main>
 
     <main id="httpWorkspace" class="http-workspace hidden" aria-label="HTTP 请求调试">
       <section id="curlImportCard" class="curl-import-card" aria-labelledby="curlImportTitle">
@@ -322,13 +330,18 @@
     <footer class="statusbar app-statusbar">
       <span id="mqttFooterStatus" class="listen-status"><span id="statusIndicator" class="status-dot"></span><span id="statusText">正在连接页面…</span></span>
       <span id="httpFooterStatus" class="listen-status hidden"><span class="status-dot ready"></span><span id="httpStatusText">HTTP 请求数据仅保留在当前 DevTools 会话内</span></span>
-<span class="status-meta"><span id="packetCount">0 条报文</span><span class="shortcuts">Esc 清筛选 · Space 暂停 · / 搜索</span><span>v0.8.4</span><a class="update-link" href="https://github.com/ganghao1024/mqtt-local-devtools/releases/latest" target="_blank" rel="noopener noreferrer" title="在新标签页打开 GitHub 最新发布版本">GitHub 更新 ↗</a></span>
+      <span id="analysisFooterStatus" class="listen-status hidden">故障分析使用独立缓存 · 按对象连续分析字段变化</span>
+<span class="status-meta"><span id="packetCount">0 条报文</span><span class="shortcuts">Esc 清筛选 · Space 暂停 · / 搜索</span><span>v0.8.5</span><a class="update-link" href="https://github.com/ganghao1024/mqtt-local-devtools/releases/latest" target="_blank" rel="noopener noreferrer" title="在新标签页打开 GitHub 最新发布版本">GitHub 更新 ↗</a></span>
     </footer>
 
     <script src="ring-buffer.js"></script>
     <script src="panel-runtime.js"></script>
+    <script src="analysis-runtime.js"></script>
+    <script src="analysis-session.js"></script>
     <script src="http-client-runtime.js"></script>
     <script src="panel.js"></script>
+    <script src="panel-navigation.js"></script>
+    <script src="analysis-ui.js"></script>
     <script src="http-client.js"></script>
   </body>
 </html>

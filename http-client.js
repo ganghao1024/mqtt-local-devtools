@@ -4,7 +4,6 @@
   const runtime = globalThis.__MQTT_LOCAL_DEVTOOLS_HTTP_CLIENT_RUNTIME__;
   const MAX_RENDERED_RESPONSE_CHARS = 5 * 1024 * 1024;
   const JSON_CHILD_BATCH_SIZE = 100;
-  const MODULE_STORAGE_KEY = "mqtt-local-devtools-active-module";
   const HTTP_PANE_STORAGE_KEY = "mqtt-local-devtools-http-pane-heights";
   const HTTP_PANE_DEFAULTS = Object.freeze({ importHeight: 148, requestHeight: 266 });
   const HTTP_PANE_MINIMUMS = Object.freeze({ importHeight: 96, requestHeight: 150, responseHeight: 100 });
@@ -72,32 +71,13 @@
     copyResponseButton: document.querySelector("#copyResponseButton")
   };
 
-  function setActiveModule(moduleName, options = {}) {
-    const module = moduleName === "http" ? "http" : "mqtt";
-    const httpActive = module === "http";
-    state.module = module;
-    document.body.dataset.activeModule = module;
-    elements.mqttModuleButton.classList.toggle("selected", !httpActive);
-    elements.mqttModuleButton.setAttribute("aria-selected", String(!httpActive));
-    elements.httpModuleButton.classList.toggle("selected", httpActive);
-    elements.httpModuleButton.setAttribute("aria-selected", String(httpActive));
-    elements.mqttHeaderActions.classList.toggle("hidden", httpActive);
-    elements.mqttWorkspace.classList.toggle("hidden", httpActive);
-    elements.httpWorkspace.classList.toggle("hidden", !httpActive);
-    elements.mqttFooterStatus.classList.toggle("hidden", httpActive);
-    elements.httpFooterStatus.classList.toggle("hidden", !httpActive);
-    elements.packetCount.classList.toggle("hidden", httpActive);
-    elements.shortcuts.classList.toggle("hidden", httpActive);
-    if (httpActive) applyHttpPaneHeights();
-    if (options.persist !== false) {
-      try {
-        localStorage.setItem(MODULE_STORAGE_KEY, module);
-      } catch {
-        // Module selection still applies to the current session.
-      }
+  document.addEventListener("mqtt-modulechange", event => {
+    state.module = event.detail.module;
+    if (state.module === "http") {
+      applyHttpPaneHeights();
+      if (event.detail.focus) elements.curlInput.focus();
     }
-    if (httpActive && options.focus !== false) elements.curlInput.focus();
-  }
+  });
 
   function clamp(value, minimum, maximum) {
     return Math.min(Math.max(value, minimum), maximum);
@@ -670,8 +650,6 @@
     }
   }
 
-  elements.mqttModuleButton.addEventListener("click", () => setActiveModule("mqtt"));
-  elements.httpModuleButton.addEventListener("click", () => setActiveModule("http"));
   elements.parseCurlButton.addEventListener("click", parseCurlInput);
   elements.clearHttpButton.addEventListener("click", clearHttpClient);
   elements.curlInput.addEventListener("paste", () => {
@@ -717,11 +695,6 @@
   renderRows("headers");
   syncBodyType();
   resetResponse();
-  let initialModule = "mqtt";
-  try {
-    initialModule = localStorage.getItem(MODULE_STORAGE_KEY) === "http" ? "http" : "mqtt";
-  } catch {
-    // Keep MQTT as the initial module.
-  }
-  setActiveModule(initialModule, { persist: false, focus: false });
+  state.module = document.body.dataset.activeModule || "mqtt";
+  if (state.module === "http") applyHttpPaneHeights();
 })();

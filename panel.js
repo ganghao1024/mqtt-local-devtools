@@ -72,6 +72,11 @@ const state = {
     maxBytes: MAX_STORED_BYTES
   }),
   eventIds: new Set(),
+  eventById: new Map(),
+  sequenceById: new Map(),
+  captureSequence: 0,
+  analysisRevision: 0,
+  evictedCount: 0,
   searchTextByEventId: new Map(),
   topicIndex: panelRuntime.createTopicCounterIndex(),
   cachedPacketCount: 0,
@@ -383,6 +388,7 @@ function clearDetails() {
   elements.rawDetailsContent.textContent = "";
   elements.rawDetailsCard.open = false;
   elements.detailsEmpty.classList.remove("hidden");
+  elements.detailsEmpty.textContent = "点击一条报文查看完整内容";
   elements.metadataCard.classList.add("hidden");
   elements.payloadCard.classList.add("hidden");
   elements.rawDetailsCard.classList.add("hidden");
@@ -418,6 +424,11 @@ function searchableEventText(event) {
 }
 
 function removeIndexedEvent(event) {
+  state.eventById.delete(event.id);
+  state.sequenceById.delete(event.id);
+  state.evictedCount += 1;
+  state.analysisRevision += 1;
+  globalThis.__MQTT_PANEL_ANALYSIS__?.onSourceEvict(event.id);
   state.eventIds.delete(event.id);
   state.searchTextByEventId.delete(event.id);
   if (event.kind !== "packet") return;
@@ -476,12 +487,16 @@ function consumeEvent(event, render = true) {
   const removed = state.events.append(event, byteSize);
   removed.forEach(removeIndexedEvent);
   state.eventIds.add(event.id);
+  state.eventById.set(event.id, event);
+  state.sequenceById.set(event.id, ++state.captureSequence);
+  state.analysisRevision += 1;
   if (event.kind === "packet") {
     state.receivedPacketCount += 1;
     state.cachedPacketCount += 1;
     state.topicIndex.add(event);
     state.searchTextByEventId.set(event.id, searchableEventText(event));
     state.recentPacketTimestamps.push(event.timestamp);
+    globalThis.__MQTT_PANEL_ANALYSIS__?.onPacket(event, state.connections.get(event.connectionId));
   }
   if (removed.some((item) => item.id === state.selectedEventId)) clearDetails();
 
@@ -749,7 +764,15 @@ function renderTopicGroups() {
         elements.tableWrap.scrollTop = 0;
         renderAll();
       });
-      children.append(child);
+      const analyzeButton = document.createElement("button");
+      analyzeButton.type = "button";
+      analyzeButton.className = "text-button topic-analyze-button";
+      analyzeButton.textContent = "分析";
+      analyzeButton.title = "仅分析完整 Topic：" + topic.name;
+      analyzeButton.setAttribute("aria-label", "分析完整 Topic " + topic.name);
+      analyzeButton.addEventListener("click", () => globalThis.__MQTT_PANEL_ANALYSIS__?.openTopic(topic.name));
+      const childRow = document.createElement("div"); childRow.className = "topic-child-row";
+      childRow.append(child, analyzeButton); children.append(childRow);
     }
     item.append(children);
     elements.topicGroupsList.append(item);
@@ -774,6 +797,14 @@ function createPacketRow(event) {
   absolute.className = "time-absolute";
   absolute.textContent = formatTime(event.timestamp);
   timeCell.append(relative, absolute);
+  const analysisCheck = document.createElement("input");
+  analysisCheck.type = "checkbox";
+  analysisCheck.className = "analysis-message-check";
+  analysisCheck.setAttribute("aria-label", "加入故障分析：" + event.id);
+  analysisCheck.addEventListener("click", click => click.stopPropagation());
+  const analysisEventId = event.id;
+  analysisCheck.addEventListener("change", () => globalThis.__MQTT_PANEL_ANALYSIS__?.toggleMessage(analysisEventId, analysisCheck.checked));
+  timeCell.append(analysisCheck);
 
   const directionCell = document.createElement("td");
   directionCell.className = "direction " + event.direction;
@@ -801,11 +832,18 @@ function createPacketRow(event) {
   payloadCell.title = payloadCell.textContent;
 
   row.append(timeCell, directionCell, typeCell, topicCell, qosCell, payloadCell);
-  row.addEventListener("click", () => selectEvent(event));
+  const eventId = event.id;
+  row.addEventListener("click", () => {
+    const current = state.eventById.get(eventId);
+    if (current) selectEvent(current);
+    else { clearDetails(); elements.detailsEmpty.textContent = "消息已被缓存淘汰，请选择仍在缓存中的消息"; }
+  });
   return row;
 }
 
 function updatePacketRow(row, event) {
+  const check = row.querySelector(".analysis-message-check");
+  if (check) check.checked = globalThis.__MQTT_PANEL_ANALYSIS__?.hasMessage(event.id) || false;
   row.classList.toggle("selected", event.id === state.selectedEventId);
   row.setAttribute("aria-selected", String(event.id === state.selectedEventId));
   row.dataset.timestamp = String(event.timestamp);
@@ -844,7 +882,7 @@ function renderPacketWindow() {
   if (viewport.topHeight) {
     visible.push({ id: "__virtual_top__", virtualSpacer: true, height: viewport.topHeight });
   }
-  visible.push(...viewport.items);
+  visible.push(...viewport.items.map(id => state.eventById.get(id)).filter(Boolean));
   if (viewport.bottomHeight) {
     visible.push({ id: "__virtual_bottom__", virtualSpacer: true, height: viewport.bottomHeight });
   }
@@ -858,7 +896,8 @@ function renderPacketWindow() {
 }
 
 function renderPackets(packets) {
-  state.filteredPacketView = state.timeOrder === "asc" ? packets : packets.slice().reverse();
+  const ordered = state.timeOrder === "asc" ? packets : packets.slice().reverse();
+  state.filteredPacketView = ordered.map(event => event.id);
   renderPacketWindow();
 
   const emptyState = panelRuntime.packetEmptyState(state.cachedPacketCount, packets.length);
@@ -1011,6 +1050,7 @@ function selectEvent(event) {
   elements.copyButton.disabled = false;
   renderDetails({ scrollActive: Boolean(elements.detailsSearchInput.value.trim()) });
   renderPacketWindow();
+  globalThis.__MQTT_PANEL_ANALYSIS__?.onSelect();
 }
 
 function downloadJson() {
@@ -1159,7 +1199,7 @@ elements.copyButton.addEventListener("click", async () => {
 });
 
 document.addEventListener("keydown", (event) => {
-  if (document.body.dataset.activeModule === "http") return;
+  if (document.body.dataset.activeModule && document.body.dataset.activeModule !== "mqtt") return;
   const target = event.target;
   const isEditing = target instanceof HTMLElement
     && (target.matches("input, select, textarea") || target.isContentEditable);
@@ -1216,3 +1256,29 @@ window.addEventListener("resize", () => {
 applyPaneWidths();
 clearDetails();
 renderAll();
+
+// Capture adapter. The analysis workspace copies messages into its own bounded cache.
+globalThis.__MQTT_PANEL_ANALYSIS_SOURCE__ = Object.freeze({
+  events: () => state.events.toArray(),
+  event: id => state.eventById.get(id),
+  selectedId: () => state.selectedEventId,
+  selectedTopicGroup: () => state.selectedTopicGroup,
+  selectedTopic: () => state.selectedTopic,
+  filteredIds: () => filteredPackets().map(event => event.id),
+  refreshRows: renderPacketWindow,
+  refreshSelectionMarks() {
+    for (const row of elements.packetRows.children) {
+      const check = row.querySelector(".analysis-message-check");
+      if (check) check.checked = globalThis.__MQTT_PANEL_ANALYSIS__?.hasMessage(row.dataset.renderKey) || false;
+    }
+  },
+  connection: id => state.connections.get(id),
+  display: eventForDisplay,
+  select: selectEvent,
+  sequence: id => state.sequenceById.get(id),
+  revision: () => state.analysisRevision,
+  evictedCount: () => state.evictedCount,
+  paused: () => state.paused,
+  port,
+  version: () => extensionApi.runtime.getManifest?.().version || "0.8.5"
+});
