@@ -9,7 +9,7 @@
   window.__MQTT_MONITOR_TEST_API__ = {
     devtools: { inspectedWindow: { tabId: 1 } },
     runtime: {
-      getManifest: () => ({ version: "0.8.5" }),
+      getManifest: () => ({ version: "0.8.6" }),
       connect: () => ({ postMessage() {}, onMessage: { addListener: listener => listeners.push(listener) },
         onDisconnect: { addListener: listener => disconnectListeners.push(listener) } }),
       sendMessage(_message, callback) { callback({ events: [] }); }

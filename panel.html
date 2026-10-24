@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>MQTT Local DevTools</title>
+    <link rel="stylesheet" href="design-tokens.css" />
     <link rel="stylesheet" href="panel.css" />
   </head>
   <body>
@@ -11,16 +12,16 @@
       <div class="header-leading">
         <div class="brand" aria-label="MQTT Local DevTools">
           <img class="brand-mark" src="icons/icon32.png" alt="" />
-          <span class="brand-name">DevTools</span>
+          <span class="brand-name">MQTT DevTools</span>
         </div>
-        <nav class="module-tabs" aria-label="工具模块">
-          <button id="mqttModuleButton" class="module-tab selected" type="button" aria-selected="true">
+        <nav class="module-tabs" role="tablist" aria-label="工具模块">
+          <button id="mqttModuleButton" class="module-tab selected" type="button" role="tab" aria-controls="mqttWorkspace" aria-selected="true">
             MQTT 报文
           </button>
-          <button id="httpModuleButton" class="module-tab" type="button" aria-selected="false">
+          <button id="httpModuleButton" class="module-tab" type="button" role="tab" aria-controls="httpWorkspace" aria-selected="false">
             HTTP 请求
           </button>
-          <button id="analysisModuleButton" class="module-tab" type="button" aria-selected="false">故障分析</button>
+          <button id="analysisModuleButton" class="module-tab" type="button" role="tab" aria-controls="analysisWorkspace" aria-selected="false">故障分析</button>
         </nav>
       </div>
 
@@ -41,11 +42,11 @@
       </div>
     </header>
 
-    <main id="mqttWorkspace" class="workspace">
+    <main id="mqttWorkspace" class="workspace" role="tabpanel" aria-labelledby="mqttModuleButton">
       <aside id="connectionsPane" class="connections-pane">
         <label class="search-field sidebar-search" for="topicSearchInput">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m16 16 4 4" /></svg>
-          <input id="topicSearchInput" type="search" placeholder="筛选 Topic" autocomplete="off" />
+          <input id="topicSearchInput" type="search" placeholder="筛选 Topic" aria-label="筛选 Topic" autocomplete="off" />
         </label>
 
         <section class="sidebar-section connection-section">
@@ -115,7 +116,7 @@
           </select>
           <label class="search-field global-search" for="searchInput">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m16 16 4 4" /></svg>
-            <input id="searchInput" type="search" placeholder="搜索 Topic / Payload / Client ID" autocomplete="off" />
+            <input id="searchInput" type="search" placeholder="搜索 Topic / Payload / Client ID" aria-label="搜索报文" autocomplete="off" />
           </label>
           <span id="activeTopicFilter" class="active-filter hidden"></span>
           <span id="resultCount" class="result-count">0 条结果</span>
@@ -127,7 +128,7 @@
         </div>
         <div class="analysis-capture-toolbar">
           <span>勾选消息加入分析</span>
-          <button id="addFilteredToAnalysis" class="text-button" type="button">加入当前 Topic 筛选结果（最近 1000 条）</button>
+          <button id="addFilteredToAnalysis" class="text-button" type="button" title="加入当前 Topic 筛选结果，最多取最近 1000 条">加入当前 Topic 结果</button>
           <button id="openAnalysisSelection" class="action-button compact" type="button">分析已选 (0)</button>
         </div>
         <div class="table-wrap">
@@ -212,9 +213,9 @@
       </aside>
     </main>
 
-    <main id="analysisWorkspace" class="analysis-workspace hidden" aria-label="故障分析"></main>
+    <main id="analysisWorkspace" class="analysis-workspace hidden" role="tabpanel" aria-labelledby="analysisModuleButton" aria-label="故障分析"></main>
 
-    <main id="httpWorkspace" class="http-workspace hidden" aria-label="HTTP 请求调试">
+    <main id="httpWorkspace" class="http-workspace hidden" role="tabpanel" aria-labelledby="httpModuleButton" aria-label="HTTP 请求调试">
       <section id="curlImportCard" class="curl-import-card" aria-labelledby="curlImportTitle">
         <div class="http-section-heading">
           <div>
@@ -331,7 +332,7 @@
       <span id="mqttFooterStatus" class="listen-status"><span id="statusIndicator" class="status-dot"></span><span id="statusText">正在连接页面…</span></span>
       <span id="httpFooterStatus" class="listen-status hidden"><span class="status-dot ready"></span><span id="httpStatusText">HTTP 请求数据仅保留在当前 DevTools 会话内</span></span>
       <span id="analysisFooterStatus" class="listen-status hidden">故障分析使用独立缓存 · 按对象连续分析字段变化</span>
-<span class="status-meta"><span id="packetCount">0 条报文</span><span class="shortcuts">Esc 清筛选 · Space 暂停 · / 搜索</span><span>v0.8.5</span><a class="update-link" href="https://github.com/ganghao1024/mqtt-local-devtools/releases/latest" target="_blank" rel="noopener noreferrer" title="在新标签页打开 GitHub 最新发布版本">GitHub 更新 ↗</a></span>
+<span class="status-meta"><span id="packetCount">0 条报文</span><span class="shortcuts">Esc 清筛选 · Space 暂停 · / 搜索</span><span>v0.8.6</span><a class="update-link" href="https://github.com/ganghao1024/mqtt-local-devtools/releases/latest" target="_blank" rel="noopener noreferrer" title="在新标签页打开 GitHub 最新发布版本">GitHub 更新 ↗</a></span>
     </footer>
 
     <script src="ring-buffer.js"></script>

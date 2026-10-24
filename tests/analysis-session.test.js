@@ -156,7 +156,7 @@ test("long report values are explicitly abbreviated without changing native payl
 });
 test("changes, native data and combined exports have distinct contents and matching references", () => {
   const input = records([{ device: "A", value: 0 }, { device: "A", value: 1 }]), report = s.analyze(input, config);
-  const changes = s.buildExport("changes", input, report, config, "0.8.5"), raw = s.buildExport("raw", input, null, config, "0.8.5"), combined = s.buildExport("combined", input, report, config, "0.8.5");
+  const changes = s.buildExport("changes", input, report, config, "0.8.6"), raw = s.buildExport("raw", input, null, config, "0.8.6"), combined = s.buildExport("combined", input, report, config, "0.8.6");
   assert.equal(changes.messages, undefined); assert.equal(raw.report, undefined); assert.deepEqual(combined.report, changes.report); assert.deepEqual(combined.messages, raw.messages);
   assert.equal(raw.messages[0].event.packet.rawHex, "30 00"); assert.equal(raw.messages[0].event.packet.retain, true); assert.equal(raw.messages[0].event.packet.payloadText, input[0].event.packet.payloadText);
   for (const value of [changes, raw, combined]) assert.deepEqual(JSON.parse(JSON.stringify(value)).selection.map(item => item.id), ["1", "2"]);

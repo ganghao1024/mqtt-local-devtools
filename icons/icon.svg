@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <title>MQTT Local DevTools</title>
+  <rect width="128" height="128" rx="26" fill="#0B1018" />
+  <path d="M26 66H43L54 40L66 88L78 61H102" stroke="#22D3EE" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

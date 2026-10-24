@@ -20,7 +20,7 @@ server.stdout.on("data", () => {
   started = true;
   try {
     cli(["open"]);
-    for (const file of ["analysis-stage1", "analysis-batch", "analysis-topic-scope", "analysis-matrix", "analysis-freeze", "analysis-regression"]) {
+    for (const file of ["analysis-stage1", "analysis-batch", "analysis-topic-scope", "analysis-matrix", "analysis-freeze", "analysis-regression", "design-workbench"]) {
       const output = cli(["run-code", `--filename=tests/${file}.browser.js`]);
       if (!output.includes('"passed"')) throw new Error(output);
       console.log(`${file}: ${output.split("### Result")[1]?.split("### Ran")[0].trim()}`);

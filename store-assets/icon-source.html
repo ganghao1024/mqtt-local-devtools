@@ -6,34 +6,24 @@
     <title>MQTT Local DevTools Icon</title>
     <style>
       * { box-sizing: border-box; }
-      html, body { margin: 0; width: 100%; height: 100%; background: transparent; }
-      body { display: grid; place-items: start; }
-      #icon {
-        width: 128px;
-        height: 128px;
-        display: grid;
-        place-items: center;
-        border-radius: 26px;
-        background: #238636;
-        color: #fff;
-      }
-      svg {
-        width: 66%;
-        height: 66%;
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 2.2;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-      }
+      body { margin: 0; padding: 32px; background: #172131; color: #e8eef7; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+      h1 { margin: 0 0 8px; font-size: 18px; font-weight: 600; }
+      p { margin: 0 0 28px; color: #a1b1c7; font-size: 13px; }
+      .samples { display: flex; align-items: end; gap: 32px; }
+      figure { display: grid; justify-items: center; gap: 12px; margin: 0; }
+      img { display: block; }
+      figcaption { font-size: 12px; color: #a1b1c7; }
     </style>
   </head>
   <body>
-    <div id="icon" aria-label="MQTT Local DevTools">
-      <svg viewBox="0 0 24 24">
-        <path d="M7 12a5 5 0 0 1 8.8-3.2M17 12a5 5 0 0 1-8.8 3.2" />
-        <path d="m14.4 6.8 1.8 2.1-2.7.7M9.6 17.2l-1.8-2.1 2.7-.7" />
-      </svg>
+    <h1>MQTT Local DevTools</h1>
+    <p>深色底 · 蓝青脉冲线</p>
+    <div class="samples">
+      <figure><img src="../icons/icon.svg" width="128" height="128" alt="矢量源图标" /><figcaption>SVG 源文件</figcaption></figure>
+      <figure><img src="../icons/icon128.png" width="128" height="128" alt="128 像素图标" /><figcaption>128 × 128</figcaption></figure>
+      <figure><img src="../icons/icon48.png" width="48" height="48" alt="48 像素图标" /><figcaption>48 × 48</figcaption></figure>
+      <figure><img src="../icons/icon32.png" width="32" height="32" alt="32 像素图标" /><figcaption>32 × 32</figcaption></figure>
+      <figure><img src="../icons/icon16.png" width="16" height="16" alt="16 像素图标" /><figcaption>16 × 16</figcaption></figure>
     </div>
   </body>
 </html>

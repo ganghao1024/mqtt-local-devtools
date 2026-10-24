@@ -1,0 +1,15 @@
+* { box-sizing: border-box; }
+body { width: 340px; margin: 0; padding: var(--space-5); background: var(--bg); color: var(--text); font: var(--text-sm)/1.6 var(--font-ui); }
+.brand { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); }
+.brand img { width: 36px; height: 36px; border-radius: var(--radius-md); }
+h1 { margin: 0; font-size: 16px; letter-spacing: -.02em; }
+.brand span, .hint { color: var(--muted); font-size: var(--text-xs); }
+p { margin: var(--space-3) 0; color: var(--text-soft); }
+code { color: var(--blue-bright); overflow-wrap: anywhere; font-family: var(--mono); }
+.status { padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); overflow-wrap: anywhere; }
+.steps { padding: var(--space-3) var(--space-3) var(--space-3) 32px; margin: var(--space-3) 0; background: var(--surface-subtle); border-radius: var(--radius-md); color: var(--text-soft); }
+.steps li + li { margin-top: var(--space-2); }
+strong { color: var(--text); }
+.update-link { display: inline-flex; align-items: center; min-height: var(--control-height); padding: 0 var(--space-3); color: var(--blue-bright); border: 1px solid var(--control-border); border-radius: var(--radius-sm); text-decoration: none; }
+.update-link:hover { background: var(--surface-hover); }
+.update-link:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }

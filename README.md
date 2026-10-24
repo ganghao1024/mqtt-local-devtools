@@ -2,7 +2,7 @@
 
 一个用于本地、测试和线上页面的 Chrome / Edge DevTools 网络调试插件。它能查看页面已有的 MQTT over WebSocket 连接和报文，按完整 Topic 分析连续消息的字段变化，也能导入浏览器复制的 cURL，编辑参数、请求头和 Body 后手动发送 HTTP 请求。MQTT 模块不会创建第二个 MQTT 客户端。
 
-当前版本：**v0.8.5** · [下载扩展安装包](https://github.com/ganghao1024/mqtt-local-devtools/releases/download/v0.8.5/mqtt-local-devtools-0.8.5-cws.zip) · [版本更新说明](https://github.com/ganghao1024/mqtt-local-devtools/releases/tag/v0.8.5)
+当前版本：**v0.8.6** · [下载扩展安装包](https://github.com/ganghao1024/mqtt-local-devtools/releases/download/v0.8.6/mqtt-local-devtools-0.8.6-cws.zip) · [版本更新说明](https://github.com/ganghao1024/mqtt-local-devtools/releases/tag/v0.8.6)
 
 ![MQTT Local DevTools 面板](store-assets/screenshot-1280x800.png)
 
@@ -178,6 +178,12 @@ npm run check
 
 浏览器操作回归需要已安装的 playwright-cli 及其浏览器，执行 npm run test:browser。该命令启动仅监听 127.0.0.1:8174 的测试服务，在真实面板 HTML 中注入测试扩展 API，验证 A/B、最新 N 条、字段变化规律、三种导出、独立缓存隔离，以及高频输入、分页、取消任务、原有列表和 HTTP 回归。结束后关闭测试服务及浏览器。下载产物位于被 Git 忽略的 .playwright-cli/。这不等同于连接真实 Broker 的扩展端到端测试。
 
-v0.8.5 已通过 97 项自动化测试和 6 组浏览器回归，包含倒序与分页、分析冻结、多轮手动取样、三种 JSON 实际下载及高频消息下的列表和详情操作。验证范围与尚未验证的边界见 [故障分析验证记录](docs/verification.md)。
+v0.8.6 已通过 101 项自动化测试和 7 组浏览器回归，包含倒序与分页、分析冻结、多轮手动取样、三种 JSON 实际下载及高频消息下的列表和详情操作。验证范围与尚未验证的边界见 [故障分析验证记录](docs/verification.md)。
 
 修改扩展代码后，需要在扩展管理页点击“重新加载”，然后刷新被调试页面。
+
+### 界面与设计规则
+
+MQTT、HTTP、故障分析和扩展弹窗共用 `design-tokens.css` 中的深色主题、文字、间距、焦点和控件尺寸；实际样式分别由 `panel.css`、`popup.css` 消费。主题沿用当前脉冲图标的深色底与蓝青色强调，统一主按钮、导航、选中状态和焦点。维护说明见 [界面设计规范](docs/design-system.md)。v0.8.6 包含模块键盘导航、可换行筛选、清晰的变化与冻结提示，安装包和版本说明见页面顶部链接。
+
+`npm run test:browser` 还会验证工作台在 1280、900、640px 宽度下的布局、导航焦点、HTTP 分隔条与弹窗。手动打包时请包含 `design-tokens.css` 和 `popup.css`。

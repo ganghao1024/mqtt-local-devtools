@@ -9,6 +9,7 @@
       const button = document.getElementById(name + "ModuleButton");
       button?.classList.toggle("selected", name === module);
       button?.setAttribute("aria-selected", String(name === module));
+      if (button) button.tabIndex = name === module ? 0 : -1;
       document.getElementById(name + "Workspace")?.classList.toggle("hidden", name !== module);
       document.getElementById(name + "FooterStatus")?.classList.toggle("hidden", name !== module);
     }
@@ -21,7 +22,17 @@
     }
     document.dispatchEvent(new CustomEvent("mqtt-modulechange", { detail: { module, focus: options.focus !== false } }));
   }
-  for (const name of modules) document.getElementById(name + "ModuleButton")?.addEventListener("click", () => activate(name));
+  for (const name of modules) {
+    const button = document.getElementById(name + "ModuleButton");
+    button?.addEventListener("click", () => activate(name));
+    button?.addEventListener("keydown", event => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const index = event.key === "Home" ? 0 : event.key === "End" ? modules.length - 1 : (modules.indexOf(name) + (event.key === "ArrowRight" ? 1 : -1) + modules.length) % modules.length;
+      activate(modules[index], { focus: false });
+      document.getElementById(modules[index] + "ModuleButton").focus();
+    });
+  }
   globalThis.__MQTT_PANEL_MODULES__ = Object.freeze({ activate });
   let initial = "mqtt";
   try { initial = localStorage.getItem(storageKey) || initial; } catch { /* Use default. */ }

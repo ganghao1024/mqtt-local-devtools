@@ -178,7 +178,7 @@
     $("analysisCacheStatus").textContent = "独立缓存 " + stats.count + " / " + stats.maxItems + " 条 · " + (stats.bytes / 1048576).toFixed(1) + " / 32 MiB" + (captureFrozen ? " · 已冻结" : "") + (stats.full ? " · 已满，停止写入 · 未收录 " + stats.skipped : captureFrozen || sourceDisconnected ? "" : " · 接收中") + (stats.rejected ? " · 过大跳过 " + stats.rejected : "") + (sourceDisconnected ? " · 捕获通道断开" : "");
     $("analysisSelectLatest").textContent = "分析";
     $("analysisFreezeStatus").classList.toggle("hidden", !captureFrozen);
-    $("analysisFreezeStatus").textContent = captureFrozen ? "本轮已冻结，不再自动接收分析消息（已略过 " + frozenSkipped + " 条新消息）。点击“获取最新 N 条”可复制当前 Topic 的最新消息并重新分析，获取后仍保持冻结。" : "";
+    $("analysisFreezeStatus").textContent = captureFrozen ? "本轮已冻结，不再自动接收分析消息 · 已略过 " + frozenSkipped + " 条新消息。需要新数据时，点击“获取最新 N 条”。" : "";
     $("analysisCacheWarning").classList.toggle("hidden", !stats.full);
     $("analysisCacheWarning").textContent = stats.full ? "分析缓存已达到" + (stats.fullReason === "items" ? "条数" : "容量") + "上限，已停止收录新消息；已有记录、选择和分析结果均保留。以下“最新 N 条”只从已保留记录中选择。可先导出，再通过“更多操作 → 清空独立缓存”恢复接收。未收录 " + stats.skipped + " 条。" : "";
     renderTopicGroups();
@@ -427,8 +427,8 @@
   $("analysisChangeView").addEventListener("change", () => { page = 0; renderChanges(); });
   $("analysisPreviousPage").addEventListener("click", () => { page -= 1; renderChanges(); }); $("analysisNextPage").addEventListener("click", () => { page += 1; renderChanges(); });
   $("analysisExportChanges").addEventListener("click", () => download("changes")); $("analysisExportRaw").addEventListener("click", () => download("raw")); $("analysisExportCombined").addEventListener("click", () => download("combined"));
-  $("analysisFields").addEventListener("input", () => { config = { ...config, fields: [...new Set($("analysisFields").value.split(/[,，\n]/).map(path => path.trim()).filter(Boolean))] }; invalidateReport("关注字段已更改，请点“开始分析”"); });
+  $("analysisFields").addEventListener("input", () => { config = { ...config, fields: [...new Set($("analysisFields").value.split(/[,，\n]/).map(path => path.trim()).filter(Boolean))] }; invalidateReport("关注字段已更改，请点击“分析”"); });
   $("analysisFields").addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); chooseLatest(); } });
-  $("analysisResetFields").addEventListener("click", () => { $("analysisFields").value = ""; config = { ...config, fields: [] }; invalidateReport("已切换为全部字段，请点“开始分析”"); $("analysisFields").focus(); });
+  $("analysisResetFields").addEventListener("click", () => { $("analysisFields").value = ""; config = { ...config, fields: [] }; invalidateReport("已切换为全部字段，请点击“分析”"); $("analysisFields").focus(); });
   renderStats(); renderSelection(); setTab("changes");
 })();

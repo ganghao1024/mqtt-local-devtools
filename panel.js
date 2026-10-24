@@ -1280,5 +1280,5 @@ globalThis.__MQTT_PANEL_ANALYSIS_SOURCE__ = Object.freeze({
   evictedCount: () => state.evictedCount,
   paused: () => state.paused,
   port,
-  version: () => extensionApi.runtime.getManifest?.().version || "0.8.5"
+  version: () => extensionApi.runtime.getManifest?.().version || "0.8.6"
 });
